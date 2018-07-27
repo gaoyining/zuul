@@ -19,6 +19,8 @@ import com.netflix.zuul.filters.ZuulFilter;
 
 /**
  * Interface to provide instances of ZuulFilter from a given class.
+ *
+ * 用于从给定类提供ZuulFilter实例的接口。
  */
 public interface FilterFactory {
     

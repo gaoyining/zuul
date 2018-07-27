@@ -54,6 +54,9 @@ import static com.netflix.zuul.filters.FilterType.INBOUND;
 
 /**
  * Subclasses of this class are supposed to be thread safe and hence should not have any non final member variables
+ *
+ * 这个类的子类应该是线程安全的，因此不应该有任何非最终成员变量
+ *
  * Created by saroskar on 5/18/17.
  */
 @ThreadSafe

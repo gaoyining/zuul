@@ -104,20 +104,26 @@ public class Server
 
     public void start(boolean sync)
     {
+        // 初始化服务组
         serverGroup = new ServerGroup("Salamander", eventLoopConfig.acceptorCount(), eventLoopConfig.eventLoopCount(), eventLoopGroupMetrics);
+        // ---------------------关键方法--------------------------
+        // 初始化通讯
         serverGroup.initializeTransport();
         try {
             List<ChannelFuture> allBindFutures = new ArrayList<>();
 
             // Setup each of the channel initializers on requested ports.
+            // 在请求的端口上设置每个通道初始值设定项。
             for (Map.Entry<Integer, ChannelInitializer> entry : portsToChannelInitializers.entrySet())
             {
                 allBindFutures.add(setupServerBootstrap(entry.getKey(), entry.getValue()));
             }
 
             // Once all server bootstraps are successfully initialized, then bind to each port.
+            // 成功初始化所有服务器引导后，绑定到每个端口。
             for (ChannelFuture f: allBindFutures) {
                 // Wait until the server socket is closed.
+                // 等到服务器套接字关闭。
                 ChannelFuture cf = f.channel().closeFuture();
                 if (sync) {
                     cf.sync();
@@ -196,9 +202,16 @@ public class Server
 
     private class ServerGroup
     {
-        /** A name for this ServerGroup to use in naming threads. */
+        /** A name for this ServerGroup to use in naming threads.
+         * 此ServerGroup的名称，用于命名线程。*/
         private final String name;
+        /**
+         * 接收线程数
+         */
         private final int acceptorThreads;
+        /**
+         * 工作线程数
+         */
         private final int workerThreads;
         private final EventLoopGroupMetrics eventLoopGroupMetrics;
 
@@ -208,11 +221,21 @@ public class Server
         private volatile boolean stopped = false;
 
         private ServerGroup(String name, int acceptorThreads, int workerThreads, EventLoopGroupMetrics eventLoopGroupMetrics) {
+            /**
+             * 服务组名称
+             */
             this.name = name;
+            /**
+             * 接收线程数
+             */
             this.acceptorThreads = acceptorThreads;
+            /**
+             * 工作线程数
+             */
             this.workerThreads = workerThreads;
             this.eventLoopGroupMetrics = eventLoopGroupMetrics;
 
+            // 设置未捕获异常，而终止的方法
             Thread.setDefaultUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler() {
                 public void uncaughtException(final Thread t, final Throwable e) {
                     LOG.error("Uncaught throwable", e);
@@ -225,7 +248,9 @@ public class Server
         private void initializeTransport()
         {
             // TODO - try our own impl of ChooserFactory that load-balances across the eventloops using leastconns algo?
+            // TODO - 试试我们自己的ChooserFactory impl，使用leastconns算法在eventloops上进行负载均衡？
             EventExecutorChooserFactory chooserFactory;
+            // 判断是否使用最小连接数
             if (USE_LEASTCONNS_FOR_EVENTLOOPS.get()) {
                 chooserFactory = new LeastConnsEventLoopChooserFactory(eventLoopGroupMetrics);
             } else {
@@ -257,6 +282,7 @@ public class Server
                         SelectorProvider.provider(),
                         DefaultSelectStrategyFactory.INSTANCE
                 );
+                // I/O操作和用户自定义任务的执行时间比为 9：1
                 ((NioEventLoopGroup) clientToProxyWorkerPool).setIoRatio(90);
             }
 
@@ -274,12 +300,20 @@ public class Server
             // Flag status as down.
             // TODO - is this _only_ changing the local status? And therefore should we also implement a HealthCheckHandler
             // that we can flag to return DOWN here (would that then update Discovery? or still be a delay?)
+            // 将状态标记为关闭。
+            // TODO - 这是_only_改变本地状态？ 因此，我们是否还应该实现HealthCheckHandler
+            // 我们可以标记在这里返回DOWN（然后会更新Discovery吗？或者仍然是延迟？）
             serverStatusManager.localStatus(InstanceInfo.InstanceStatus.DOWN);
 
             // Shutdown each of the client connections (blocks until complete).
             // NOTE: ClientConnectionsShutdown can also be configured to gracefully close connections when the
             // discovery status changes to DOWN. So if it has been configured that way, then this will be an additional
             // call to gracefullyShutdownClientChannels(), which will be a noop.
+
+            // 关闭每个客户端连接（块直到完成）。
+            // 注意：ClientConnectionsShutdown也可以配置为在正常时关闭连接
+            // 发现状态更改为DOWN。 因此，如果它已经这样配置，那么这将是一个额外的
+            // 调用gracefullyShutdownClientChannels（），这将是一个noop。
             clientConnectionsShutdown.gracefullyShutdownClientChannels();
 
             LOG.warn("Shutting down event loops");

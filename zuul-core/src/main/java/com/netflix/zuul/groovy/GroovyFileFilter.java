@@ -39,6 +39,8 @@ import static org.mockito.Mockito.when;
 
 /**
  * Filters only .groovy files
+ *
+ * filters 只 groovy文件
  */
 public class GroovyFileFilter implements FilenameFilter {
     public boolean accept(File dir, String name) {

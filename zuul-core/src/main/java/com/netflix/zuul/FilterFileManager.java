@@ -51,6 +51,8 @@ import static org.mockito.Mockito.*;
  * Polling interval and directories are specified in the initialization of the class, and a poller will check
  * for changes and additions.
  *
+ * 此类管理更改和新Groovy筛选器的目录轮询。 轮询间隔和目录在类的初始化中指定，轮询器将检查更改和添加。
+ *
  * @author Mikey Cohen
  *         Date: 12/7/11
  *         Time: 12:09 PM
@@ -59,14 +61,35 @@ import static org.mockito.Mockito.*;
 public class FilterFileManager {
 
     private static final Logger LOG = LoggerFactory.getLogger(FilterFileManager.class);
+    /**
+     * zuul 过滤器加载线程数
+     */
     private static final DynamicIntProperty FILE_PROCESSOR_THREADS = new DynamicIntProperty("zuul.filterloader.threads", 1);
+    /**
+     * zuul 过滤器文件加载任务间隔时间，秒，默认 120
+     */
     private static final DynamicIntProperty FILE_PROCESSOR_TASKS_TIMEOUT_SECS = new DynamicIntProperty("zuul.filterloader.tasks.timeout", 120);
 
+    /**
+     * 加载线程
+     */
     Thread poller;
+    /**
+     * 运行标志
+     */
     boolean bRunning = true;
 
+    /**
+     * filter文件管理参数配置
+     */
     private final FilterFileManagerConfig config;
+    /**
+     * filter 加载器
+     */
     private final FilterLoader filterLoader;
+    /**
+     * 执行文件线程池
+     */
     private final ExecutorService processFilesService;
 
     @Inject
@@ -92,6 +115,8 @@ public class FilterFileManager {
         long startTime = System.currentTimeMillis();
         
         filterLoader.putFiltersForClasses(config.getClassNames());
+        // ---------------------关键方法--------------------
+        // 过滤器文件管理
         manageFiles();
         startPoller();
         
@@ -117,6 +142,8 @@ public class FilterFileManager {
                 while (bRunning) {
                     try {
                         sleep(config.getPollingIntervalSeconds() * 1000);
+                        // ------------------------关键方法----------------------------
+                        //
                         manageFiles();
                     }
                     catch (Exception e) {
@@ -153,6 +180,8 @@ public class FilterFileManager {
     /**
      * Returns a List<File> of all Files from all polled directories
      *
+     * 返回所有轮询目录中所有文件的List <File>
+     *
      * @return
      */
     List<File> getFiles() {
@@ -171,6 +200,8 @@ public class FilterFileManager {
 
     /**
      * puts files into the FilterLoader. The FilterLoader will only add new or changed filters
+     *
+     * 将文件放入FilterLoader。 FilterLoader仅添加新的或更改的过滤器
      *
      * @param aFiles a List<File>
      * @throws IOException
@@ -197,7 +228,11 @@ public class FilterFileManager {
     void manageFiles()
     {
         try {
+            // -----------------------关键方法-------------------------
+            // 返回所有轮询目录中所有文件的List <File>
             List<File> aFiles = getFiles();
+            // -----------------------关键方法-------------------------
+            //
             processGroovyFiles(aFiles);
         }
         catch (Exception e) {
@@ -210,9 +245,21 @@ public class FilterFileManager {
 
     public static class FilterFileManagerConfig
     {
+        /**
+         * 目录
+         */
         private String[] directories;
+        /**
+         * 类数组
+         */
         private String[] classNames;
+        /**
+         * 轮询间隔秒
+         */
         private int pollingIntervalSeconds;
+        /**
+         * 文件名称过滤器
+         */
         private FilenameFilter filenameFilter;
 
         public FilterFileManagerConfig(String[] directories, String[] classNames, int pollingIntervalSeconds, FilenameFilter filenameFilter) {

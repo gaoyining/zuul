@@ -28,6 +28,10 @@ public interface ShouldFilter<T extends ZuulMessage>
      * a "true" return from this method means that the apply() method should be invoked
      *
      * @return true if the apply() method should be invoked. false will not invoke the apply() method
+     *
+     * 从此方法返回“true”意味着应该调用apply（）方法
+     * @return如果应该调用apply（）方法，则为true。 false不会调用apply（）方法
+     *
      */
     boolean shouldFilter(T msg);
 }

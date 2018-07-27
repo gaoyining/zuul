@@ -45,19 +45,49 @@ import static org.mockito.Mockito.when;
  * <p/>
  * By default ZuulFilters are static; they don't carry state. This may be overridden by overriding the isStaticFilter() property to false
  *
+ *
+ * ZuulFilters的基本抽象类。 基类定义了要定义的抽象方法：
+ * filterType（） - 按类型对过滤器进行分类。
+ * Zuul中的标准类型是用于路由前过滤的“pre”，用于路由到源的“route”，用于路由后过滤器的“post”，用于错误处理的“error”。
+ * 我们还支持静态响应的“static”类型，请参阅StaticResponseFilter。
+ * <P/>
+ * 还必须为过滤器定义filterOrder（）。 如果优先级对于过滤器不重要，则过滤器可能具有相同的filterOrder。 filterOrders不需要是顺序的。
+ * <P/>
+ * 可以使用Archaius属性禁用ZuulFilters。
+ * <P/>
+ * 默认情况下，ZuulFilters是静态的; 他们没有携带状态。 这可以通过将isStaticFilter（）属性重写为false来覆盖
+ *
  * @author Mikey Cohen
  *         Date: 10/26/11
  *         Time: 4:29 PM
  */
 public abstract class BaseFilter<I extends ZuulMessage, O extends ZuulMessage> implements ZuulFilter<I,O>
 {
+    /**
+     * 基础名称
+     */
     private final String baseName;
+    /**
+     * 并发个数
+     */
     private final AtomicInteger concurrentCount;
+    /**
+     * 并发拒绝数
+     */
     private final Counter concurrencyRejections;
 
+    /**
+     * 禁用的filter名
+     */
     private final CachedDynamicBooleanProperty filterDisabled;
+    /**
+     * 最大并发数
+     */
     private final CachedDynamicIntProperty filterConcurrencyLimit;
 
+    /**
+     * 并发保护协议是否开启
+     */
     private static final CachedDynamicBooleanProperty concurrencyProtectEnabled = new CachedDynamicBooleanProperty("zuul.filter.concurrency.protect.enabled", true);
 
 
@@ -83,6 +113,8 @@ public abstract class BaseFilter<I extends ZuulMessage, O extends ZuulMessage> i
     /**
      * The name of the Archaius property to disable this filter. by default it is zuul.[classname].[filtertype].disable
      *
+     * 用于禁用此过滤器的Archaius属性的名称。 默认情况下，它是zuul.[classname].[filtertype].disable
+     *
      * @return
      */
     public String disablePropertyName() {
@@ -92,6 +124,8 @@ public abstract class BaseFilter<I extends ZuulMessage, O extends ZuulMessage> i
     /**
      * The name of the Archaius property for this filter's max concurrency. by default it is zuul.[classname].[filtertype].concurrency.limit
      *
+     * 此过滤器的最大并发数的Archaius属性的名称。 默认情况下，它是zuul.[classname].[filtertype].concurrency.limit
+     *
      * @return
      */
     public String maxConcurrencyPropertyName() {
@@ -100,6 +134,8 @@ public abstract class BaseFilter<I extends ZuulMessage, O extends ZuulMessage> i
 
     /**
      * If true, the filter has been disabled by archaius and will not be run
+     *
+     * 如果为true，则过滤器已被archaius禁用，并且不会运行
      *
      * @return
      */

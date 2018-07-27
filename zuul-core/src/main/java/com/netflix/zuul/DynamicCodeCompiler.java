@@ -21,12 +21,31 @@ import java.io.File;
 
 /**
  * Interface to generate Classes from source code
+ *
+ * 从源代码生成类的接口
+ *
  * User: mcohen
  * Date: 5/30/13
  * Time: 11:35 AM
  */
 public interface DynamicCodeCompiler {
+
+    /**
+     * 编译Groovy代码并返回编译代码的Class。
+     *
+     * @param sCode
+     * @param sName
+     * @return
+     * @throws Exception
+     */
     Class compile(String sCode, String sName) throws Exception;
 
+    /**
+     * 从文件中编译groovy类
+     *
+     * @param file
+     * @return
+     * @throws Exception
+     */
     Class compile(File file) throws Exception;
 }

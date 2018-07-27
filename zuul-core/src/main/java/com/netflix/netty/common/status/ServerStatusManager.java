@@ -27,6 +27,9 @@ import static com.netflix.appinfo.InstanceInfo.InstanceStatus.UNKNOWN;
 import static com.netflix.appinfo.InstanceInfo.InstanceStatus.UP;
 
 /**
+ *
+ * eureka服务器状态管理
+ *
  * User: michaels@netflix.com
  * Date: 7/6/17
  * Time: 3:37 PM
@@ -34,7 +37,13 @@ import static com.netflix.appinfo.InstanceInfo.InstanceStatus.UP;
 @Singleton
 public class ServerStatusManager
 {
+    /**
+     * 应用信息管理
+     */
     private final ApplicationInfoManager applicationInfoManager;
+    /**
+     * eureka客户端
+     */
     private final DiscoveryClient discoveryClient;
 
     @Inject
@@ -51,7 +60,15 @@ public class ServerStatusManager
         // applicationInfoManager.getInfo().getStatus()) does not get changed to reflect that.
         // So that's why I'm doing this little dance here of looking at both remote and local statuses.
 
+        // 注意：在本地调试时，令我惊讶的是，当实例远程调用OUT_OF_SERVICE时
+        // 在Discovery中，虽然StatusChangeEvent被触发，但_local_ InstanceStatus（即。
+        // applicationInfoManager.getInfo（）。getStatus（））没有被改变以反映这一点。
+        // 这就是为什么我在这里做这个小舞蹈，看看远程和本地状态。
+
+
+        // 本地状态
         InstanceInfo.InstanceStatus local = localStatus();
+        // 远程状态
         InstanceInfo.InstanceStatus remote = remoteStatus();
 
         if (local == UP && remote != UNKNOWN) {

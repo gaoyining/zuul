@@ -64,25 +64,33 @@ public class ZuulFiltersModule extends AbstractModule {
         // Get filter directories.
         final AbstractConfiguration config = ConfigurationManager.getConfigInstance();
 
+        // --------------------------关键方法-------------------------
+        // filter路径
         String[] filterLocations = findFilterLocations(config);
+        // --------------------------关键方法-------------------------
+        // 获得filter类名
         String[] filterClassNames = findClassNames(config);
 
         // Init the FilterStore.
+        // 初始化FilterStore。
         FilterFileManagerConfig filterConfig = new FilterFileManagerConfig(filterLocations, filterClassNames, 5);
         return filterConfig;
     }
 
     // Get compiled filter classes to be found on classpath.
+    // 获取在类路径上找到的已编译过filter
     @VisibleForTesting
     String[] findClassNames(AbstractConfiguration config) {
 
         // Find individually-specified filter classes.
+        //查找单独指定的过滤器类。
         String[] filterClassNamesStrArray = config.getStringArray("zuul.filters.classes");
         Stream<String> classNameStream = Arrays.stream(filterClassNamesStrArray)
                 .map(String::trim)
                 .filter(blank.negate());
 
         // Find filter classes in specified packages.
+        // 在指定的包中查找过滤器类。
         String[] packageNamesStrArray = config.getStringArray("zuul.filters.packages");
         ClassPath cp;
         try {
@@ -111,12 +119,19 @@ public class ZuulFiltersModule extends AbstractModule {
         return filterClassNames;
     }
 
+    /**
+     * 获得filter路径
+     * @param config
+     * @return
+     */
     @VisibleForTesting
     String[] findFilterLocations(AbstractConfiguration config) {
         String[] locations = config.getStringArray("zuul.filters.locations");
         if (locations == null) {
+            //  如果为空，设置默认值
             locations = new String[]{"inbound", "outbound", "endpoint"};
         }
+        // 转化为数组
         String[] filterLocations = Arrays.stream(locations)
                 .map(String::trim)
                 .filter(blank.negate())

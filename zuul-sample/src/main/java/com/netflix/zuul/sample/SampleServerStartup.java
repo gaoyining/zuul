@@ -51,6 +51,8 @@ import java.util.Map;
 /**
  * Sample Server Startup - class that configures the Netty server startup settings
  *
+ * Sample Server Startup - 配置Netty服务器启动设置的类
+ *
  * Author: Arthur Gonigberg
  * Date: November 20, 2017
  */

@@ -19,6 +19,9 @@ package com.netflix.netty.common.channel.config;
 import java.util.HashMap;
 
 /**
+ *
+ * 渠道配置
+ *
  * User: michaels@netflix.com
  * Date: 2/8/17
  * Time: 6:43 PM
@@ -34,6 +37,7 @@ public class ChannelConfig implements Cloneable
 
     public ChannelConfig(HashMap<ChannelConfigKey, ChannelConfigValue> parameters)
     {
+        // 克隆参数
         this.parameters = (HashMap<ChannelConfigKey, ChannelConfigValue>) parameters.clone();
     }
 

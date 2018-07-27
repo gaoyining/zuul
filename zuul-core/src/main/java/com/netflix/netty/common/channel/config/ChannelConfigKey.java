@@ -17,6 +17,9 @@
 package com.netflix.netty.common.channel.config;
 
 /**
+ *
+ * 渠道配置key
+ *
  * User: michaels@netflix.com
  * Date: 2/8/17
  * Time: 6:17 PM

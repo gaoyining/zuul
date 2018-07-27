@@ -97,6 +97,7 @@ public abstract class BaseServerStartup
     @PostConstruct
     public void init() throws Exception
     {
+        // 实例化渠道配置
         ChannelConfig channelDeps = new ChannelConfig();
         addChannelDependencies(channelDeps);
 
@@ -109,6 +110,12 @@ public abstract class BaseServerStartup
         server = new Server(portsToChannelInitializers, serverStatusManager, clientConnectionsShutdown, eventLoopGroupMetrics);
     }
 
+    /**
+     * 选择端口和渠道，由子类实现
+     * @param clientChannels
+     * @param channelDependencies
+     * @return
+     */
     protected abstract Map<Integer, ChannelInitializer> choosePortsAndChannels(
             ChannelGroup clientChannels,
             ChannelConfig channelDependencies);

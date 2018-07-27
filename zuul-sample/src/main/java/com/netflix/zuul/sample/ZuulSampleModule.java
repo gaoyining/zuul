@@ -52,6 +52,7 @@ public class ZuulSampleModule extends AbstractModule {
         bind(OriginManager.class).to(BasicNettyOriginManager.class);
 
         // zuul filter loading
+        // 加载zuul filter 过滤器
         install(new ZuulFiltersModule());
         bind(FilterFileManager.class).asEagerSingleton();
 

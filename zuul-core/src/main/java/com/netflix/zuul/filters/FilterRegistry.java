@@ -21,11 +21,17 @@ import java.util.Collection;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
+ *
+ * filter注册表
+ *
  * @author mhawthorne
  */
 @Singleton
 public class FilterRegistry
 {
+    /**
+     * filter map
+     */
     private final ConcurrentHashMap<String, ZuulFilter> filters = new ConcurrentHashMap<String, ZuulFilter>();
 
     public ZuulFilter remove(String key) {

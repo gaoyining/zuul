@@ -45,11 +45,16 @@ public class GroovyCompiler implements DynamicCodeCompiler {
     /**
      * Compiles Groovy code and returns the Class of the compiles code.
      *
+     * 编译Groovy代码并返回编译代码的Class。
+     *
      * @param sCode
      * @param sName
      * @return
      */
     public Class compile(String sCode, String sName) {
+        // 一个可以加载Groovy类的ClassLoader。 加载的类被缓存，
+        // 不应缓存来自其他类加载器的类。 为了能够加载之前要求但后来创建的脚本，
+        // 必须不要为该类名保留类似“未找到类”的信息。 这包括可能的父装载程序。 始终重新加载未缓存的类。
         GroovyClassLoader loader = getGroovyClassLoader();
         LOG.warn("Compiling filter: " + sName);
         Class groovyClass = loader.parseClass(sCode, sName);
@@ -65,6 +70,8 @@ public class GroovyCompiler implements DynamicCodeCompiler {
 
     /**
      * Compiles groovy class from a file
+     *
+     * 从文件中编译groovy类
      *
      * @param file
      * @return

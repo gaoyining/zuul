@@ -55,6 +55,8 @@ public class ClientConnectionsShutdown
         this.discoveryClient = discoveryClient;
 
         if (discoveryClient != null)
+            // ----------------------------关键方法-----------------------------
+            // 初始化销毁监听器
             initDiscoveryListener();
     }
 
@@ -69,7 +71,11 @@ public class ClientConnectionsShutdown
                 if (sce.getPreviousStatus() == InstanceInfo.InstanceStatus.UP
                     && (sce.getStatus() == InstanceInfo.InstanceStatus.OUT_OF_SERVICE || sce.getStatus() == InstanceInfo.InstanceStatus.DOWN))
                 {
+                    // 实例的前一个状态 == UP
+                    //      && 当前状态 == 故意关闭 || 当前状态 == 关闭
+
                     // Schedule to gracefully close all the client connections.
+                    // 安排正常关闭所有客户端连接。
                     if (ENABLED.get()) {
                         executor.schedule(() -> {
                             gracefullyShutdownClientChannels();
@@ -82,6 +88,8 @@ public class ClientConnectionsShutdown
 
     /**
      * Note this blocks until all the channels have finished closing.
+     *
+     * 请注意，直到所有通道都完成关闭为止。
      */
     public void gracefullyShutdownClientChannels()
     {

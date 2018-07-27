@@ -42,6 +42,8 @@ import static org.mockito.Mockito.*;
  * This class is one of the core classes in Zuul. It compiles, loads from a File, and checks if source code changed.
  * It also holds ZuulFilters by filterType.
  *
+ * 该类是Zuul的核心类之一。 它编译，从文件加载，并检查源代码是否更改。 它还通过filterType保存ZuulFilters。
+ *
  * @author Mikey Cohen
  *         Date: 11/3/11
  *         Time: 1:59 PM
@@ -51,14 +53,35 @@ public class FilterLoader
 {
     private static final Logger LOG = LoggerFactory.getLogger(FilterLoader.class);
 
+    /**
+     * filter类最后修改时间map
+     */
     private final ConcurrentHashMap<String, Long> filterClassLastModified = new ConcurrentHashMap<String, Long>();
+    /**
+     * filter类编码map
+     */
     private final ConcurrentHashMap<String, String> filterClassCode = new ConcurrentHashMap<String, String>();
+    /**
+     * filter检查器map
+     */
     private final ConcurrentHashMap<String, String> filterCheck = new ConcurrentHashMap<String, String>();
+    /**
+     *  按类型分类的filter map
+     */
     private final ConcurrentHashMap<FilterType, List<ZuulFilter>> hashFiltersByType = new ConcurrentHashMap<>();
+    /**
+     * 按名称分类的filter map
+     */
     private final ConcurrentHashMap<String, ZuulFilter> filtersByNameAndType = new ConcurrentHashMap<>();
 
+    /**
+     * filter 注册表
+     */
     private final FilterRegistry filterRegistry;
 
+    /**
+     * 动态代码编译器
+     */
     private final DynamicCodeCompiler compiler;
     
     private final FilterFactory filterFactory;
@@ -115,6 +138,8 @@ public class FilterLoader
     /**
      * From a file this will read the ZuulFilter source code, compile it, and add it to the list of current filters
      * a true response means that it was successful.
+     *
+     * 从文件中，这将读取ZuulFilter源代码，编译它，并将其添加到当前过滤器列表中，真正的响应意味着它成功。
      *
      * @param file
      * @return true if the filter in file successfully read, compiled, verified and added to Zuul
