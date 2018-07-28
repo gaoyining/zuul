@@ -17,25 +17,31 @@
 package com.netflix.zuul.netty.connectionpool;
 
 /**
+ * 连接池
  * Created by saroskar on 3/24/16.
  */
 public interface ConnectionPoolConfig {
 
-    /* Origin name from connection pool */
+    /* Origin name from connection pool
+    * 连接池中的原始名称 */
     String getOriginName();
 
-    /* Max number of requests per connection before it needs to be recycled */
+    /* Max number of requests per connection before it needs to be recycled
+    * 每个连接在需要回收之前的最大请求数 */
     int getMaxRequestsPerConnection();
 
-    /* Max connections per host */
+    /* Max connections per host
+    * 每台主机最多连接数 */
     int maxConnectionsPerHost();
 
     int perServerWaterline();
 
-    /* Origin client TCP configuration options */
+    /* Origin client TCP configuration options
+    * Origin客户端TCP配置选项 */
     int getConnectTimeout();
 
-    /* number of milliseconds connection can stay idle in a connection pool before it is closed */
+    /* number of milliseconds connection can stay idle in a connection pool before it is closed
+    * 连接池在关闭之前连接可以保持空闲的毫秒数 */
     int getIdleTimeout();
 
     int getTcpReceiveBufferSize();

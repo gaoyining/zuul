@@ -21,6 +21,8 @@ import io.netty.handler.timeout.IdleStateEvent;
 
 /**
  * Just listens for the IdleStateEvent and closes the channel if received.
+ *
+ * 只需侦听IdleStateEvent并在收到时关闭通道。
  */
 public class CloseOnIdleStateHandler extends ChannelInboundHandlerAdapter
 {

@@ -99,6 +99,9 @@ public class ClientRequestReceiver extends ChannelDuplexHandler {
         // Flag that we have now received the LastContent for this request from the client.
         // This is needed for ClientResponseReceiver to know whether it's yet safe to start writing
         // a response to the client channel.
+        // 我们现在收到来自客户端的此请求的LastContent标记。
+        // ClientResponseReceiver需要知道开始编写是否安全
+        // 对客户端频道的响应。
         if (msg instanceof LastHttpContent) {
             ctx.channel().attr(ATTR_LAST_CONTENT_RECEIVED).set(Boolean.TRUE);
         }
@@ -107,6 +110,7 @@ public class ClientRequestReceiver extends ChannelDuplexHandler {
             clientRequest = (HttpRequest) msg;
 
             // Don't process invalid requests.
+            // 不处理无效请求。
             if (clientRequest.decoderResult().isFailure()) {
                 String errorMsg = "Invalid http request. "
                         + "clientRequest = " + clientRequest.toString()
@@ -120,10 +124,15 @@ public class ClientRequestReceiver extends ChannelDuplexHandler {
                 throw ze;
             }
 
+            // ----------------------------关键方法-------------------------
+            // 从netty请求构建ZuulMessage。
             zuulRequest = buildZuulHttpRequest(clientRequest, ctx);
+            // ----------------------------关键方法-------------------------
+            // 处理http 100状态
             handleExpect100Continue(ctx, clientRequest);
 
-            //Send the request down the filter pipeline
+            // Send the request down the filter pipeline
+            // 沿过滤器管道发送请求
             ctx.fireChannelRead(zuulRequest);
         }
         else if (msg instanceof HttpContent) {
@@ -136,6 +145,7 @@ public class ClientRequestReceiver extends ChannelDuplexHandler {
         }
         else if (msg instanceof HAProxyMessage) {
             // do nothing, should already be handled by ElbProxyProtocolHandler
+            // 什么都不做，应该已经由ElbProxyProtocolHandler处理了
             LOG.debug("Received HAProxyMessage for Proxy Protocol IP: {}", ((HAProxyMessage) msg).sourceAddress());
             ReferenceCountUtil.release(msg);
         }
@@ -199,6 +209,7 @@ public class ClientRequestReceiver extends ChannelDuplexHandler {
 
     private void handleExpect100Continue(ChannelHandlerContext ctx, HttpRequest req) {
         if (HttpUtil.is100ContinueExpected(req)) {
+            // http 状态为100
             final ChannelFuture f = ctx.writeAndFlush(new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.CONTINUE));
             f.addListener((s) -> {
                 if (! s.isSuccess()) {
@@ -206,19 +217,27 @@ public class ClientRequestReceiver extends ChannelDuplexHandler {
                 }
             });
             // Remove the Expect: 100-Continue header from request as we don't want to proxy it downstream.
+            // 从请求中删除Expect：100-Continue标头，因为我们不想在下游代理它。
             req.headers().remove(HttpHeaderNames.EXPECT);
             zuulRequest.getHeaders().remove(HttpHeaderNames.EXPECT.toString());
         }
     }
 
     // Build a ZuulMessage from the netty request.
+    // 从netty请求构建ZuulMessage。
     private HttpRequestMessage buildZuulHttpRequest(final HttpRequest nativeRequest, final ChannelHandlerContext clientCtx) {
         // Setup the context for this request.
+        // 为此请求设置上下文。
         final SessionContext context;
-        if (decorator != null) { // Optionally decorate the context.
+        if (decorator != null) {
+            // Optionally decorate the context.
+            // 可选择装饰上下文。
             SessionContext tempContext = new SessionContext();
             // Store the netty channel in SessionContext.
+            // 在NETContext中存储netty频道。
             tempContext.set(CommonContextKeys.NETTY_SERVER_CHANNEL_HANDLER_CONTEXT, clientCtx);
+            // -----------------------关键方法--------------------------
+            // 装饰sessionContext
             context = decorator.decorate(tempContext);
         }
         else {
@@ -226,14 +245,17 @@ public class ClientRequestReceiver extends ChannelDuplexHandler {
         }
 
         // Get the client IP (ignore XFF headers at this point, as that can be app specific).
+        // 获取客户端IP（此时忽略XFF标头，因为它可以是特定于应用程序的）。
         final Channel channel = clientCtx.channel();
         final String clientIp = channel.attr(SourceAddressChannelHandler.ATTR_SOURCE_ADDRESS).get();
 
         // This is the only way I found to get the port of the request with netty...
+        // 这是我发现使用netty获取请求端口的唯一方法
         final int port = channel.attr(SourceAddressChannelHandler.ATTR_LOCAL_PORT).get();
         final String serverName = channel.attr(SourceAddressChannelHandler.ATTR_LOCAL_ADDRESS).get();
 
-        // Store info about the SSL handshake if applicable, and choose the http scheme.
+        // Store info about the SSL handshake if applicable, and choos  e the http scheme.
+        // 存储有关SSL握手的信息（如果适用），然后选择http方案。
         String scheme = SCHEME_HTTP;
         final SslHandshakeInfo sslHandshakeInfo = channel.attr(SslHandshakeInfoHandler.ATTR_SSL_INFO).get();
         if (sslHandshakeInfo != null) {
@@ -242,12 +264,14 @@ public class ClientRequestReceiver extends ChannelDuplexHandler {
         }
 
         // Decide if this is HTTP/1 or HTTP/2.
+        // 确定这是HTTP / 1还是HTTP / 2。
         String protocol = channel.attr(PROTOCOL_NAME).get();
         if (protocol == null) {
             protocol = nativeRequest.protocolVersion().text();
         }
 
         // Strip off the query from the path.
+        // 从路径中删除查询。
         String path = nativeRequest.uri();
         int queryIndex = path.indexOf('?');
         if (queryIndex > -1) {
@@ -255,12 +279,17 @@ public class ClientRequestReceiver extends ChannelDuplexHandler {
         }
 
         // Setup the req/resp message objects.
+        // 设置req / resp消息对象。
         final HttpRequestMessage request = new HttpRequestMessageImpl(
                 context,
                 protocol,
                 nativeRequest.method().asciiName().toString().toLowerCase(),
                 path,
+                // --------------------关键方法---------------------
+                // 复制查询参数
                 copyQueryParams(nativeRequest),
+                // --------------------关键方法---------------------
+                // 复制head
                 copyHeaders(nativeRequest),
                 clientIp,
                 scheme,
@@ -272,17 +301,23 @@ public class ClientRequestReceiver extends ChannelDuplexHandler {
         // received any of the content).
         // NOTE that we also later may override this if it is Chunked encoding, but we receive
         // a LastHttpContent without any prior HttpContent's.
+        // 尝试根据标题决定此请求是否有正文（因为我们还没有收到任何内容）。
+        // 请注意，如果它是Chunked编码，我们以后也可以覆盖它，但我们会收到
+        // 没有任何先前HttpContent的LastHttpContent。
         if (HttpUtils.hasChunkedTransferEncodingHeader(request) || HttpUtils.hasNonZeroContentLengthHeader(request)) {
             request.setHasBody(true);
         }
 
         // Store this original request info for future reference (ie. for metrics and access logging purposes).
+        // 存储此原始请求信息以供将来参考（即用于度量和访问日志记录）。
         request.storeInboundRequest();
 
         // Store the netty request for use later.
+        // 存储netty请求以供日后使用。
         context.set(CommonContextKeys.NETTY_HTTP_REQUEST, nativeRequest);
 
         // Store zuul request on netty channel for later use.
+        // 在网络频道上存储zuul请求供以后使用。
         channel.attr(ATTR_ZUUL_REQ).set(request);
 
         if (nativeRequest instanceof DefaultFullHttpRequest) {
@@ -305,6 +340,8 @@ public class ClientRequestReceiver extends ChannelDuplexHandler {
         final String uri = nativeRequest.uri();
         int queryStart = uri.indexOf('?');
         final String query = queryStart == -1 ? null : uri.substring(queryStart + 1);
+        // ------------------------关键方法---------------------
+        // 格式化http query 参数
         return HttpQueryParams.parse(query);
     }
 

@@ -57,14 +57,29 @@ public class ZuulSampleModule extends AbstractModule {
         bind(FilterFileManager.class).asEagerSingleton();
 
         // general server bindings
-        bind(ServerStatusManager.class); // health/discovery status
-        bind(SessionContextDecorator.class).to(ZuulSessionContextDecorator.class); // decorate new sessions when requests come in
-        bind(Registry.class).to(DefaultRegistry.class); // atlas metrics registry
-        bind(RequestCompleteHandler.class).to(BasicRequestCompleteHandler.class); // metrics post-request completion
-        bind(AbstractDiscoveryClientOptionalArgs.class).to(DiscoveryClient.DiscoveryClientOptionalArgs.class); // discovery client
-        bind(RequestMetricsPublisher.class).to(BasicRequestMetricsPublisher.class); // timings publisher
+        // 一般服务器绑定
+
+        // health/discovery status
+        // 健康/发现状态
+        bind(ServerStatusManager.class);
+        // decorate new sessions when requests come in
+        // 在请求进来时装饰新会话
+        bind(SessionContextDecorator.class).to(ZuulSessionContextDecorator.class);
+        // atlas metrics registry
+        // 注册表监控集合
+        bind(Registry.class).to(DefaultRegistry.class);
+        // metrics post-request completion
+        // 监控请求完成后
+        bind(RequestCompleteHandler.class).to(BasicRequestCompleteHandler.class);
+        // discovery client
+        // 发现客户端
+        bind(AbstractDiscoveryClientOptionalArgs.class).to(DiscoveryClient.DiscoveryClientOptionalArgs.class);
+        // timings publisher
+        // 时间发布者
+        bind(RequestMetricsPublisher.class).to(BasicRequestMetricsPublisher.class);
 
         // access logger, including request ID generator
+        // 访问记录器，包括请求ID生成器
         bind(AccessLogPublisher.class).toInstance(new AccessLogPublisher("ACCESS",
                 (channel, httpRequest) -> ClientRequestReceiver.getRequestFromChannel(channel).getContext().getUUID()));
     }

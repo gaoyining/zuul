@@ -116,6 +116,8 @@ public class Server
             // 在请求的端口上设置每个通道初始值设定项。
             for (Map.Entry<Integer, ChannelInitializer> entry : portsToChannelInitializers.entrySet())
             {
+                // ---------------------------关键方法------------------------
+                // 执行server启动
                 allBindFutures.add(setupServerBootstrap(entry.getKey(), entry.getValue()));
             }
 
@@ -149,11 +151,13 @@ public class Server
     private ChannelFuture setupServerBootstrap(int port, ChannelInitializer channelInitializer)
             throws InterruptedException
     {
+        // 构建了一个 ServerBootstrap 这个正是Netty的启动类
         ServerBootstrap serverBootstrap = new ServerBootstrap().group(
                 serverGroup.clientToProxyBossPool,
                 serverGroup.clientToProxyWorkerPool);
 
         // Choose socket options.
+        // 选择socket选项。
         Map<ChannelOption, Object> channelOptions = new HashMap<>();
         channelOptions.put(ChannelOption.SO_BACKLOG, 128);
         //channelOptions.put(ChannelOption.SO_TIMEOUT, SERVER_SOCKET_TIMEOUT.get());
@@ -173,19 +177,23 @@ public class Server
         }
 
         // Apply socket options.
+        // 应用soclet选项
         for (Map.Entry<ChannelOption, Object> optionEntry : channelOptions.entrySet()) {
             serverBootstrap = serverBootstrap.option(optionEntry.getKey(), optionEntry.getValue());
         }
 
+        // 正如Netty的启动中的处理数据的 Handler 那这里应该也就是Zuul处理的核心所在
         serverBootstrap.childHandler(channelInitializer);
         serverBootstrap.validate();
 
         LOG.info("Binding to port: " + port);
 
         // Flag status as UP just before binding to the port.
+        // 在绑定到端口之前将状态标记为UP。
         serverStatusManager.localStatus(InstanceInfo.InstanceStatus.UP);
 
         // Bind and start to accept incoming connections.
+        // 绑定并开始接受传入连接。
         return serverBootstrap.bind(port).sync();
     }
 

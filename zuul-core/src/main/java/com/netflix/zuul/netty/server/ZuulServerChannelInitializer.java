@@ -36,10 +36,16 @@ public class ZuulServerChannelInitializer extends BaseZuulChannelInitializer {
         super(port, channelConfig, channelDependencies, channels);
     }
 
+    /**
+     * 初始化渠道
+     * @param ch
+     * @throws Exception
+     */
     @Override
     protected void initChannel(Channel ch) throws Exception
     {
         // Configure our pipeline of ChannelHandlerS.
+        // 配置我们的ChannelHandlerS管道。
         ChannelPipeline pipeline = ch.pipeline();
 
         storeChannel(ch);
@@ -48,6 +54,8 @@ public class ZuulServerChannelInitializer extends BaseZuulChannelInitializer {
         addTcpRelatedHandlers(pipeline);
         addHttp1Handlers(pipeline);
         addHttpRelatedHandlers(pipeline);
+        // ------------------------关键方法--------------------------
+        // 加入zuul处理器
         addZuulHandlers(pipeline);
     }
 }

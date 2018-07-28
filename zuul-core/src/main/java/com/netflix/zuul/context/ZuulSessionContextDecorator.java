@@ -31,6 +31,8 @@ import javax.inject.Singleton;
 /**
  * Base Session Context Decorator
  *
+ * 基本会话上下文装饰器
+ *
  * Author: Arthur Gonigberg
  * Date: November 21, 2017
  */
@@ -49,6 +51,7 @@ public class ZuulSessionContextDecorator implements SessionContextDecorator {
     @Override
     public SessionContext decorate(SessionContext ctx) {
         // TODO split out commons parts from BaseSessionContextDecorator
+        // TODO 从BaseSession ContextDecorator中分割出公共部分
 
         ChannelHandlerContext nettyCtx = (ChannelHandlerContext) ctx.get(CommonContextKeys.NETTY_SERVER_CHANNEL_HANDLER_CONTEXT);
         if (nettyCtx == null) {
@@ -58,6 +61,7 @@ public class ZuulSessionContextDecorator implements SessionContextDecorator {
         Channel channel = nettyCtx.channel();
 
         // set injected origin manager
+        // 设置注入的原始管理器
         ctx.put(CommonContextKeys.ORIGIN_MANAGER, originManager);
 
         // TODO
@@ -66,15 +70,18 @@ public class ZuulSessionContextDecorator implements SessionContextDecorator {
         ctx.set(CommonContextKeys.THROTTLE_RESULT, throttleResult);*/
 
         // Add a container for request attempts info.
+        // 为请求尝试信息添加容器。
         ctx.put(CommonContextKeys.REQUEST_ATTEMPTS, new RequestAttempts());
 
         // Providers for getting the size of read/written request and response body sizes from channel.
+        // 提供者从通道获取读/写请求和响应体大小的大小。
         ctx.set(CommonContextKeys.REQ_BODY_SIZE_PROVIDER, HttpBodySizeRecordingChannelHandler.getCurrentRequestBodySize(channel));
         ctx.set(CommonContextKeys.RESP_BODY_SIZE_PROVIDER, HttpBodySizeRecordingChannelHandler.getCurrentResponseBodySize(channel));
 
         CurrentPassport passport = CurrentPassport.fromChannel(channel);
         ctx.set(CommonContextKeys.PASSPORT, passport);
 
+        // 设置UUID
         ctx.setUUID(UUID_FACTORY.generateRandomUuid().toString());
 
         return ctx;

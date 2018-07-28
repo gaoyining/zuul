@@ -19,6 +19,8 @@ package com.netflix.zuul.stats.status;
 /**
  * Zuul Status Category Group
  *
+ * zuul 状态组
+ *
  * Author: Arthur Gonigberg
  * Date: December 20, 2017
  */

@@ -15,9 +15,35 @@
  */
 package com.netflix.zuul;
 
+/**
+ * 执行状态
+ */
 public enum ExecutionStatus {
 
-    SUCCESS (1), SKIPPED(-1), DISABLED(-2), FAILED(-3), BODY_AWAIT(-4), ASYNC_AWAIT(-5);
+    /**
+     * 成功
+     */
+    SUCCESS (1),
+    /**
+     * 跳过
+     */
+    SKIPPED(-1),
+    /**
+     * 禁用
+     */
+    DISABLED(-2),
+    /**
+     * 失败
+     */
+    FAILED(-3),
+    /**
+     * body等待
+     */
+    BODY_AWAIT(-4),
+    /**
+     * 异步等待
+     */
+    ASYNC_AWAIT(-5);
     
     private int status;
 

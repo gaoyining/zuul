@@ -37,6 +37,27 @@ package com.netflix.zuul.stats.status;
  *    ORIGIN
  *    CLIENT
  *    LOCAL
+ *
+ *    Zuul 状态类别
+ *
+ *    由于某些原始服务器不会/无法在响应中返回正确的HTTP状态代码，
+ *    因此我们使用设置StatusCategory属性来区分我们关心的主要状态和Zuul的观点。
+ *
+ *    这些状态类别分为两组：
+ *
+ *    成功 | 失败
+ *
+ *    每个都可以有一个较窄的定义，例如：
+ *
+ *    FAILURE_THROTTLED
+ *    FAILURE_ORIGIN
+ *    etc...
+ *
+ *    _should_也可以用以下之一细分：
+ *
+ *    ORIGIN
+ *    CLIENT
+ *    LOCAL
  */
 public enum ZuulStatusCategory implements StatusCategory {
     SUCCESS(ZuulStatusCategoryGroup.SUCCESS, 1),

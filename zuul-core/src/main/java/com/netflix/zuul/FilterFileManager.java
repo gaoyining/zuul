@@ -118,6 +118,8 @@ public class FilterFileManager {
         // ---------------------关键方法--------------------
         // 过滤器文件管理
         manageFiles();
+        // ---------------------关键方法--------------------
+        // 打开一个线程一直执行任务
         startPoller();
         
         LOG.warn("Finished loading all zuul filters. Duration = " + (System.currentTimeMillis() - startTime) + " ms.");
@@ -143,7 +145,7 @@ public class FilterFileManager {
                     try {
                         sleep(config.getPollingIntervalSeconds() * 1000);
                         // ------------------------关键方法----------------------------
-                        //
+                        // 开启一个线程，开始轮询
                         manageFiles();
                     }
                     catch (Exception e) {
@@ -214,6 +216,7 @@ public class FilterFileManager {
         for (File file : aFiles) {
             tasks.add(() -> {
                 try {
+                    // ------------------------------关键方法----------------------
                     return filterLoader.putFilter(file);
                 }
                 catch(Exception e) {
@@ -222,6 +225,7 @@ public class FilterFileManager {
                 }
             });
         }
+        // 执行给定的任务
         processFilesService.invokeAll(tasks, FILE_PROCESSOR_TASKS_TIMEOUT_SECS.get(), TimeUnit.SECONDS);
     }
 
@@ -232,7 +236,7 @@ public class FilterFileManager {
             // 返回所有轮询目录中所有文件的List <File>
             List<File> aFiles = getFiles();
             // -----------------------关键方法-------------------------
-            //
+            // 执行groovy files
             processGroovyFiles(aFiles);
         }
         catch (Exception e) {

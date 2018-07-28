@@ -62,10 +62,22 @@ import static com.netflix.zuul.filters.FilterType.INBOUND;
 @ThreadSafe
 public abstract class BaseZuulFilterRunner<I extends ZuulMessage, O extends ZuulMessage> implements FilterRunner<I, O> {
 
+    /**
+     * 过滤器回调通知
+     */
     private final FilterUsageNotifier usageNotifier;
+    /**
+     * 下一个filter runner
+     */
     private final FilterRunner<O, ? extends ZuulMessage> nextStage;
 
+    /**
+     * filter runner  sessionContext 索引
+     */
     private final String RUNNING_FILTER_IDX_SESSION_CTX_KEY;
+    /**
+     * sessionContext 是否等待标志
+     */
     private final String AWAITING_BODY_FLAG_SESSION_CTX_KEY;
     private static final Logger LOG = LoggerFactory.getLogger(BaseZuulFilterRunner.class);
 
@@ -82,10 +94,19 @@ public abstract class BaseZuulFilterRunner<I extends ZuulMessage, O extends Zuul
                 "channel handler context");
     }
 
+    /**
+     *
+     * @return
+     */
     public FilterRunner<O, ? extends ZuulMessage> getNextStage() {
         return nextStage;
     }
 
+    /**
+     * filter runner  sessionContext 索引 初始化
+     * @param zuulMesg
+     * @return
+     */
     protected final AtomicInteger initRunningFilterIndex(I zuulMesg) {
         final AtomicInteger idx = new AtomicInteger(0);
         zuulMesg.getContext().put(RUNNING_FILTER_IDX_SESSION_CTX_KEY, idx);
@@ -101,6 +122,12 @@ public abstract class BaseZuulFilterRunner<I extends ZuulMessage, O extends Zuul
         return zuulMesg.getContext().containsKey(AWAITING_BODY_FLAG_SESSION_CTX_KEY);
     }
 
+    /**
+     * ture：设置为wait状态；
+     * false：移除wait状态
+     * @param zuulMesg
+     * @param flag
+     */
     protected final void setFilterAwaitingBody(I zuulMesg, boolean flag) {
         if (flag) {
             zuulMesg.getContext().put(AWAITING_BODY_FLAG_SESSION_CTX_KEY, Boolean.TRUE);
@@ -125,66 +152,102 @@ public abstract class BaseZuulFilterRunner<I extends ZuulMessage, O extends Zuul
             nextStage.filter(zuulMesg);
         }
         else {
-            //Next stage is Netty channel handler
+            // Next stage is Netty channel handler
+            // 下一阶段是Netty频道处理程序
             getChannelHandlerContext(zuulMesg).fireChannelRead(zuulMesg);
         }
     }
 
     protected final O filter(final ZuulFilter<I, O> filter, final I inMesg) {
         final long startTime = System.currentTimeMillis();
+        // message 快照
         final ZuulMessage snapshot = inMesg.getContext().debugRouting() ? inMesg.clone() : null;
         FilterChainResumer resumer = null;
 
         try {
             ExecutionStatus filterRunStatus = null;
             if (filter.filterType() == INBOUND && inMesg.getContext().shouldSendErrorResponse()) {
+                // 类型等于 in && 允许相应发送错误
+
                 // Pass request down the pipeline, all the way to error endpoint if error response needs to be generated
+                // 如果需要生成错误响应，则将请求传递到管道，一直到错误端点
+
+                //设置状态为跳过
                 filterRunStatus = SKIPPED;
             }
 
+            // 判断是否跳过
             if (shouldSkipFilter(inMesg, filter)) {
+
                 filterRunStatus = SKIPPED;
             }
 
+            // 判断是否禁用
             if (filter.isDisabled()) {
                 filterRunStatus = DISABLED;
             }
 
             if (filterRunStatus != null) {
+                // ----------------------关键方法-----------------------
+                // 记录过滤器执行
                 recordFilterCompletion(filterRunStatus, filter, startTime, inMesg, snapshot);
+                // 返回过滤器默认输出信息
                 return filter.getDefaultOutput(inMesg);
             }
 
+            // -----------------------关键方法-----------------------
+            // 消息主体是否已经完成
             if (!isMessageBodyReadyForFilter(filter, inMesg)) {
+                // 没有完成
+                // -----------------------关键方法-----------------------
+                // ture：设置为wait状态；false：移除wait状态
                 setFilterAwaitingBody(inMesg, true);
                 LOG.debug("Filter {} waiting for body, UUID {}", filter.filterName(), inMesg.getContext().getUUID());
-                return null;  //wait for whole body to be buffered
+                // wait for whole body to be buffered
+                // 等待整个身体被缓冲
+                return null;
             }
+            // 已经完成
             setFilterAwaitingBody(inMesg, false);
 
             if (snapshot != null) {
+                // ------------------关键方法-----------------
                 Debug.addRoutingDebug(inMesg.getContext(), "Filter " + filter.filterType().toString() + " " + filter.filterOrder() + " " + filter.filterName());
             }
 
-            //run body contents accumulated so far through this filter
+            // run body contents accumulated so far through this filter
+            // 通过此过滤器运行到目前为止累积的正文内容
+            // ------------------关键方法-----------------
+            // 处理运行到这里的正文
             inMesg.runBufferedBodyContentThroughFilter(filter);
 
             if (filter.getSyncType() == FilterSyncType.SYNC) {
+                // 为同步
                 final SyncZuulFilter<I, O> syncFilter = (SyncZuulFilter) filter;
+                // -----------------------关键方法-----------------------
+                // 执行filter apply 操作
                 final O outMesg = syncFilter.apply(inMesg);
+                // -----------------------关键方法-----------------------
+                // 记录过滤器结果
                 recordFilterCompletion(SUCCESS, filter, startTime, inMesg, snapshot);
                 return (outMesg != null) ? outMesg : filter.getDefaultOutput(inMesg);
             }
 
             // async filter
+            // 为异步
+            // 在filter之前调用，如限流啊之类的
             filter.incrementConcurrency();
+            // 临时存储起来这个Filter待异步完成回调
             resumer = new FilterChainResumer(inMesg, filter, snapshot, startTime);
             filter.applyAsync(inMesg)
+                    // 添加定时观察者
                 .observeOn(Schedulers.from(getChannelHandlerContext(inMesg).executor()))
                 .doOnUnsubscribe(resumer::decrementConcurrency)
                 .subscribe(resumer);
 
-            return null;  //wait for the async filter to finish
+            // wait for the async filter to finish
+            // 等待异步过滤器完成
+            return null;
         }
         catch (Throwable t) {
             if (resumer != null) {
@@ -197,21 +260,27 @@ public abstract class BaseZuulFilterRunner<I extends ZuulMessage, O extends Zuul
         }
     }
 
-    /* This is typically set by a filter when wanting to reject a request and also reduce load on the server by
-       not processing any more filterChain */
+    /** This is typically set by a filter when wanting to reject a request and also reduce load on the server by
+     *  not processing any more filterChain
+     *
+     *  这通常由希望拒绝请求的过滤器设置，并且还通过不再处理filterChain来减少服务器上的负载
+     */
     protected final boolean shouldSkipFilter(final I inMesg, final ZuulFilter<I, O> filter) {
         if (filter.filterType() == ENDPOINT) {
-            //Endpoints may not be skipped
+            // 如果是路由不允许停止
             return false;
         }
         final SessionContext zuulCtx = inMesg.getContext();
         if (!filter.shouldFilter(inMesg)) {
+            // 不执行
             return true;
         }
         if ((zuulCtx.shouldStopFilterProcessing()) && (!filter.overrideStopFilterProcessing())) {
+            // 停止执行过滤器 &&
             return true;
         }
         if (zuulCtx.isCancelled()) {
+            // 取消
             return true;
         }
         return false;
@@ -219,6 +288,7 @@ public abstract class BaseZuulFilterRunner<I extends ZuulMessage, O extends Zuul
 
 
     private boolean isMessageBodyReadyForFilter(final ZuulFilter filter, final I inMesg) {
+        // 不需要缓冲主体  || 已经完成body
         return ((!filter.needsBodyBuffered(inMesg)) || (inMesg.hasCompleteBody()));
     }
 
@@ -251,6 +321,14 @@ public abstract class BaseZuulFilterRunner<I extends ZuulMessage, O extends Zuul
         }
     }
 
+    /**
+     * 记录过滤器执行
+     * @param status
+     * @param filter
+     * @param startTime
+     * @param zuulMesg
+     * @param startSnapshot
+     */
     protected void recordFilterCompletion(final ExecutionStatus status, final ZuulFilter<I, O> filter, long startTime,
                                           final ZuulMessage zuulMesg, final ZuulMessage startSnapshot) {
 
@@ -258,6 +336,7 @@ public abstract class BaseZuulFilterRunner<I extends ZuulMessage, O extends Zuul
         final long execTime = System.currentTimeMillis() - startTime;
 
         // Record the execution summary in context.
+        // 在上下文中记录执行摘要。
         switch (status) {
             case FAILED:
                 zuulCtx.addFilterExecutionSummary(filter.filterName(), FAILED.name(), execTime);
@@ -333,6 +412,10 @@ public abstract class BaseZuulFilterRunner<I extends ZuulMessage, O extends Zuul
             }
         }
 
+        /**
+         * 处获得我们的结果并将其恢复到我们保管的 filter。
+         * @param outMesg
+         */
         @Override
         public void onNext(O outMesg) {
             try {

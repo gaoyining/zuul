@@ -63,6 +63,9 @@ public abstract class BaseServerStartup
     protected final FilterLoader filterLoader;
     protected final FilterUsageNotifier usageNotifier;
 
+    /**
+     * 端口和渠道初始化参数
+     */
     private Map<Integer, ChannelInitializer> portsToChannelInitializers;
     private ClientConnectionsShutdown clientConnectionsShutdown;
     private Server server;
@@ -99,6 +102,7 @@ public abstract class BaseServerStartup
     {
         // 实例化渠道配置
         ChannelConfig channelDeps = new ChannelConfig();
+        // 添加依赖
         addChannelDependencies(channelDeps);
 
         ChannelGroup clientChannels = new DefaultChannelGroup(GlobalEventExecutor.INSTANCE);

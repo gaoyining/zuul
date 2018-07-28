@@ -127,7 +127,14 @@ public class DefaultClientChannelManager implements ClientChannelManager {
     {
         // Load channel initializer and conn factory.
         // We don't do this within the constructor because some subclass may not be initialized until post-construct.
+        // 加载通道初始化程序和conn factory。
+        // 我们不在构造函数中执行此操作，因为在构造之后可能不会初始化某些子类。
+
+        // ----------------------------关键方法-------------------------
+        // 创建渠道初始化器
         this.channelInitializer = createChannelInitializer(clientConfig, connPoolConfig, spectatorRegistry);
+        // ----------------------------关键方法-------------------------
+        // netty client创建工厂
         this.clientConnFactory = createNettyClientConnectionFactory(connPoolConfig, channelInitializer);
     }
 

@@ -40,6 +40,7 @@ public class BasicRequestCompleteHandler implements RequestCompleteHandler
         SessionContext context = inboundRequest.getContext();
 
         // Publish request-level metrics.
+        // 发布请求级指标。
         if (requestMetricsPublisher != null) {
             requestMetricsPublisher.collectAndPublish(context);
         }

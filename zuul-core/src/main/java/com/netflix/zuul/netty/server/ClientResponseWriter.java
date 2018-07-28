@@ -97,6 +97,7 @@ public class ClientResponseWriter extends ChannelInboundHandlerAdapter {
             final HttpResponseMessage resp = (HttpResponseMessage) msg;
 
             if (skipProcessing(resp)) {
+                // 默认为false
                 return;
             }
 
@@ -105,9 +106,15 @@ public class ClientResponseWriter extends ChannelInboundHandlerAdapter {
                    request/response cycle and something like IDLE or Request Read timeout occurs. In that case we have no way
                    to recover other than closing the socket and cleaning up resources used by BOTH responses.
                  */
+                /* 如果我们已经处于将响应流回客户端或不在活动状态的过程中，则会发生这种情况
+            请求/响应周期和IDLE或请求读取超时之类的事情发生。 在那种情况下，我们没有办法
+          除了关闭套接字和清理BOTH响应使用的资源之外的其他方法。
+        */
                 resp.disposeBufferedBody();
                 if (zuulResponse != null) zuulResponse.disposeBufferedBody();
-                ctx.close(); //This will trigger CompleteEvent if one is needed
+                // This will trigger CompleteEvent if one is needed
+                // 如果需要，将触发CompleteEvent
+                ctx.close();
                 return;
             }
 
@@ -126,6 +133,7 @@ public class ClientResponseWriter extends ChannelInboundHandlerAdapter {
                     StatusCategory status = StatusCategoryUtils.getStatusCategory(ClientRequestReceiver.getRequestFromChannel(channel));
                     if (ZuulStatusCategory.FAILURE_CLIENT_TIMEOUT.equals(status)) {
                         // If the request timed-out while being read, then there won't have been any LastContent, but thats ok because the connection will have to be discarded anyway.
+                        // 如果请求在读取时超时，则不会有任何LastContent，但这没关系，因为无论如何都必须丢弃连接。
                     }
                     else {
                         responseBeforeReceivedLastContentCounter.increment();
@@ -136,6 +144,7 @@ public class ClientResponseWriter extends ChannelInboundHandlerAdapter {
                 }
 
                 // Write out and flush the response to the client channel.
+                // 写出并刷新对客户端通道的响应。
                 channel.write(buildHttpResponse(zuulResponse));
                 writeBufferedBodyContent(zuulResponse, channel);
                 channel.flush();
@@ -161,6 +170,7 @@ public class ClientResponseWriter extends ChannelInboundHandlerAdapter {
 
     protected boolean skipProcessing(HttpResponseMessage resp) {
         // override if you need to skip processing of response
+        // 如果您需要跳过响应处理，则覆盖
         return false;
     }
 

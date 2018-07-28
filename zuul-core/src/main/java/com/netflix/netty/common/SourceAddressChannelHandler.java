@@ -32,6 +32,9 @@ import java.net.SocketAddress;
  * us to overwrite it if we have more info (eg. ELB sends a HAProxyMessage with info of REAL source
  * host + port).
  *
+ * 将源IP地址存储为通道的属性。 如果我们有更多信息
+ * （例如，ELB发送带有REAL源主机+端口信息的HAProxyMessage），这样做的优点是允许我们覆盖它。
+ *
  * User: michaels@netflix.com
  * Date: 4/14/16
  * Time: 4:29 PM

@@ -23,7 +23,18 @@ package com.netflix.zuul.filters;
  */
 public enum FilterType
 {
-    INBOUND("in"), ENDPOINT("end"), OUTBOUND("out");
+    /**
+     * 在路由之前执行
+     */
+    INBOUND("in"),
+    /**
+     * 路由操作
+     */
+    ENDPOINT("end"),
+    /**
+     * 得到相应数据之后执行
+     */
+    OUTBOUND("out");
 
     private final String shortName;
 

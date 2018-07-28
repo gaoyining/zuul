@@ -57,6 +57,7 @@ public class DirectMemoryMonitor
     @PostConstruct
     public void init()
     {
+        // 定时执行内存测量
         service.scheduleWithFixedDelay(new Task(), TASK_DELAY_PROP.get(), TASK_DELAY_PROP.get(), TimeUnit.SECONDS);
     }
 
@@ -120,7 +121,13 @@ public class DirectMemoryMonitor
 
     class Current
     {
+        /**
+         * 最大内存
+         */
         Long maxMemory;
+        /**
+         * 保留内存
+         */
         Long reservedMemory;
     }
 }

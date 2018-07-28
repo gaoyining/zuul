@@ -37,6 +37,7 @@ class Healthcheck extends HttpSyncEndpoint {
         resp.setBodyAsText("healthy")
 
         // need to set this manually since we are not going through the ProxyEndpoint
+        // 需要手动设置，因为我们没有通过ProxyEndpoint
         StatusCategoryUtils.setStatusCategory(request.getContext(), ZuulStatusCategory.SUCCESS)
 
         return resp

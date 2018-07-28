@@ -60,8 +60,14 @@ public class StatusCategoryUtils {
         return (status < 100 || status >= 500);
     }
 
+    /**
+     * 存储状态类别如果尚未失败
+     * @param context
+     * @param statusCategory
+     */
     public static void storeStatusCategoryIfNotAlreadyFailure(final SessionContext context, final StatusCategory statusCategory) {
         if (statusCategory != null) {
+            // 获得状态
             final StatusCategory nfs = (StatusCategory) context.get(CommonContextKeys.STATUS_CATGEORY);
             if (nfs == null || nfs.getGroup().getId() == ZuulStatusCategoryGroup.SUCCESS.getId()) {
                 context.set(CommonContextKeys.STATUS_CATGEORY, statusCategory);

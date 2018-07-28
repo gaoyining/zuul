@@ -207,13 +207,17 @@ public class ZuulMessageImpl implements ZuulMessage
 
     @Override
     public void runBufferedBodyContentThroughFilter(ZuulFilter filter) {
-        //Loop optimized for the common case: Most filters' processContentChunk() return
+        // Loop optimized for the common case: Most filters' processContentChunk() return
         // original chunk passed in as is without any processing
+        // 针对常见情况优化循环：大多数过滤器的processContentChunk（）返回
+        // 原始块传入，没有任何处理
         for (int i=0; i < bodyChunks.size(); i++) {
             final HttpContent origChunk = bodyChunks.get(i);
+            // 处理body 块
             final HttpContent filteredChunk = filter.processContentChunk(this, origChunk);
             if ((filteredChunk != null) && (filteredChunk != origChunk)) {
-                //filter actually did some processing, set the new chunk in and release the old chunk.
+                // filter actually did some processing, set the new chunk in and release the old chunk.
+                // 过滤器实际上做了一些处理，设置新块并释放旧块。
                 bodyChunks.set(i, filteredChunk);
                 final int refCnt = origChunk.refCnt();
                 if (refCnt > 0) {

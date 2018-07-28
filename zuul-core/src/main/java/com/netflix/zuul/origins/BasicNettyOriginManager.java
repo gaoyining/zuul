@@ -27,13 +27,21 @@ import java.util.concurrent.ConcurrentHashMap;
  * Basic Netty Origin Manager that most apps can use. This can also serve as a useful template for creating more
  * complex origin managers.
  *
+ * 大多数应用程序可以使用的基本Netty Origin Manager。 这也可以作为创建更复杂的原始管理器的有用模板。
+ *
  * Author: Arthur Gonigberg
  * Date: November 30, 2017
  */
 @Singleton
 public class BasicNettyOriginManager implements OriginManager<BasicNettyOrigin> {
 
+    /**
+     * 注册表
+     */
     private final Registry registry;
+    /**
+     * 原始映射
+     */
     private final ConcurrentHashMap<String, BasicNettyOrigin> originMappings;
 
     @Inject

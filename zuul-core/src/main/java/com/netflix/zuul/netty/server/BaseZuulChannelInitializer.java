@@ -118,7 +118,8 @@ public abstract class BaseZuulChannelInitializer extends ChannelInitializer<Chan
     protected final FilterUsageNotifier filterUsageNotifier;
     protected final ServerStatusHeaderHandler serverStatusHeaderHandler;
 
-    /** A collection of all the active channels that we can use to things like graceful shutdown */
+    /** A collection of all the active channels that we can use to things like graceful shutdown
+     * 我们可以用于优雅关闭等所有活动通道的集合 */
     protected final ChannelGroup channels; 
 
 
@@ -263,33 +264,48 @@ public abstract class BaseZuulChannelInitializer extends ChannelInitializer<Chan
     protected void addZuulHandlers(final ChannelPipeline pipeline)
     {
         pipeline.addLast("logger", nettyLogger);
+        // ---------------------------关键方法-----------------------------
+        // 客户端request 转化器
         pipeline.addLast(new ClientRequestReceiver(sessionContextDecorator));
         pipeline.addLast(passportLoggingHandler);
+        // ---------------------------关键方法------------------------------
+        // 添加zuul 渠道处理器
         addZuulFilterChainHandler(pipeline);
+        // ---------------------------关键方法------------------------------
+        // writer response
         pipeline.addLast(new ClientResponseWriter(requestCompleteHandler, registry));
     }
 
     protected void addZuulFilterChainHandler(final ChannelPipeline pipeline) {
+        // ---------------------关键方法-----------------------
+        // 获得 responseFilters 列表
         final ZuulFilter<HttpResponseMessage, HttpResponseMessage>[] responseFilters = getFilters(
                 new OutboundPassportStampingFilter(FILTERS_OUTBOUND_START),
                 new OutboundPassportStampingFilter(FILTERS_OUTBOUND_END));
 
         // response filter chain
+        // 响应过滤器链
         final ZuulFilterChainRunner<HttpResponseMessage> responseFilterChain = getFilterChainRunner(responseFilters,
                 filterUsageNotifier);
 
         // endpoint | response filter chain
+        // 路由 | 响应过滤器链
         final FilterRunner<HttpRequestMessage, HttpResponseMessage> endPoint = getEndpointRunner(responseFilterChain,
                 filterUsageNotifier, filterLoader);
 
+        // ---------------------关键方法-----------------------
+        // 获得filter 列表
         final ZuulFilter<HttpRequestMessage, HttpRequestMessage>[] requestFilters = getFilters(
                 new InboundPassportStampingFilter(FILTERS_INBOUND_START),
                 new InboundPassportStampingFilter(FILTERS_INBOUND_END));
 
         // request filter chain | end point | response filter chain
+        // 请求过滤链 | 终点 | 响应过滤器链
         final ZuulFilterChainRunner<HttpRequestMessage> requestFilterChain = getFilterChainRunner(requestFilters,
                 filterUsageNotifier, endPoint);
 
+        // -----------------------关键方法-----------------------
+        // 注册职责连
         pipeline.addLast(new ZuulFilterChainHandler(requestFilterChain, responseFilterChain));
     }
 
@@ -310,12 +326,15 @@ public abstract class BaseZuulChannelInitializer extends ChannelInitializer<Chan
     }
 
     public <T extends ZuulMessage> ZuulFilter<T, T> [] getFilters(final ZuulFilter start, final ZuulFilter stop) {
+        // 根绝类型获得filter 列表
         final List<ZuulFilter> zuulFilters = filterLoader.getFiltersByType(start.filterType());
         final ZuulFilter[] filters = new ZuulFilter[zuulFilters.size() + 2];
+        // start 作为第1个
         filters[0] = start;
         for (int i=1, j=0; i < filters.length && j < zuulFilters.size(); i++,j++) {
             filters[i] = zuulFilters.get(j);
         }
+        // end 作为最后1个
         filters[filters.length -1] = stop;
         return filters;
     }

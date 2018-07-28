@@ -21,6 +21,8 @@ import com.netflix.zuul.filters.ZuulFilter;
  * Interface to implement for registering a callback for each time a filter
  * is used.
  *
+ * 每次使用过滤器时实现的用于注册回调的接口。
+ *
  * User: michaels
  * Date: 5/13/14
  * Time: 9:55 PM

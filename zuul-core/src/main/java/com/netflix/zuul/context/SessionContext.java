@@ -41,6 +41,9 @@ import static org.junit.Assert.assertEquals;
  * between them. But we're currently still only modelling single request/response pair per session.
  *
  * NOTE: Not threadsafe, and not intended to be used concurrently.
+ *
+ * 表示客户端和源服务器之间在它们之间的专用连接/会话期间的上下文。 但是我们目前仍然只为每个会话建立单个请求/响应对。
+ * 注意：不是线程安全的，不打算同时使用。
  */
 public class SessionContext extends HashMap<String, Object> implements Cloneable
 {
@@ -301,6 +304,8 @@ public class SessionContext extends HashMap<String, Object> implements Cloneable
     /**
      * appends filter name and status to the filter execution history for the
      * current request
+     *
+     * 将过滤器名称和状态附加到当前请求的过滤器执行历史记录中
      */
     public void addFilterExecutionSummary(String name, String status, long time) {
         StringBuilder sb = getFilterExecutionSummary();

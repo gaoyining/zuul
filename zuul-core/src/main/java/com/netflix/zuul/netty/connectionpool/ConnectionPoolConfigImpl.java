@@ -29,11 +29,17 @@ public class ConnectionPoolConfigImpl implements ConnectionPoolConfig {
     private static final int DEFAULT_BUFFER_SIZE = 32 * 1024;
     private static final int DEFAULT_CONNECT_TIMEOUT = 500;
     private static final int DEFAULT_IDLE_TIMEOUT = 60000;
+    /**
+     * 默认的请求连接数
+     */
     private static final int DEFAULT_MAX_CONNS_PER_HOST = 50;
 
     private final String originName;
     private final IClientConfig clientConfig;
 
+    /**
+     * 每个连接在需要回收之前的最大请求数
+     */
     private final CachedDynamicIntProperty MAX_REQUESTS_PER_CONNECTION;
     private final CachedDynamicIntProperty PER_SERVER_WATERLINE;
 
@@ -51,6 +57,7 @@ public class ConnectionPoolConfigImpl implements ConnectionPoolConfig {
         this.MAX_REQUESTS_PER_CONNECTION = new CachedDynamicIntProperty(originName+".netty.client.maxRequestsPerConnection", 1000);
 
         // NOTE that the each eventloop has it's own connection pool per host, and this is applied per event-loop.
+        // 注意每个eventloop每个主机都有自己的连接池，这是每个事件循环应用的。
         this.PER_SERVER_WATERLINE = new CachedDynamicIntProperty(originName+".netty.client.perServerWaterline", 4);
 
         this.SOCKET_KEEP_ALIVE = new CachedDynamicBooleanProperty(originName+".netty.client.TcpKeepAlive", false);

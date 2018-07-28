@@ -84,6 +84,7 @@ public class GZipResponseFilter extends HttpOutboundSyncFilter
         }
 
         // A flag on SessionContext can be set to override normal mechanism of checking if client accepts gzip.;
+        // 可以设置SessionContext上的标志，以覆盖检查客户端是否接受gzip的正常机制。
         final HttpRequestInfo request = response.getInboundRequest();
         final Boolean overrideIsGzipRequested = (Boolean) response.getContext().get(CommonContextKeys.OVERRIDE_GZIP_REQUESTED);
         final boolean isGzipRequested = (overrideIsGzipRequested == null) ?

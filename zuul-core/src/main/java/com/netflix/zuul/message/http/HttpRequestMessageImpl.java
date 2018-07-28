@@ -404,6 +404,7 @@ public class HttpRequestMessageImpl implements HttpRequestMessage
     protected HttpRequestInfo copyRequestInfo()
     {
         // Unlike clone(), we create immutable copies of the Headers and HttpQueryParams here.
+        // 与clone（）不同，我们在这里创建了Headers和HttpQueryParams的不可变副本
         HttpRequestMessageImpl req = new HttpRequestMessageImpl(message.getContext(),
                 protocol, method, path,
                 queryParams.immutableCopy(), message.getHeaders().immutableCopy(), clientIp, scheme,

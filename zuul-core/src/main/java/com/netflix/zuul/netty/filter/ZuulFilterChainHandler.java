@@ -51,6 +51,8 @@ import static com.netflix.zuul.stats.status.ZuulStatusCategory.FAILURE_LOCAL;
 import static com.netflix.zuul.stats.status.ZuulStatusCategory.FAILURE_LOCAL_IDLE_TIMEOUT;
 
 /**
+ * zuul filter 职责连处理器
+ *
  * Created by saroskar on 5/18/17.
  */
 public class ZuulFilterChainHandler extends ChannelInboundHandlerAdapter {
@@ -68,19 +70,32 @@ public class ZuulFilterChainHandler extends ChannelInboundHandlerAdapter {
         this.responseFilterChain = Preconditions.checkNotNull(responseFilterChain, "response filter chain");
     }
 
+    /**
+     * netty 方法
+     *
+     * @param ctx
+     * @param msg
+     * @throws Exception
+     */
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
         if (msg instanceof HttpRequestMessage) {
+            // 已经被转化为 HttpRequestMessage 类型的消息
             zuulRequest = (HttpRequestMessage)msg;
 
-            //Replace NETTY_SERVER_CHANNEL_HANDLER_CONTEXT in SessionContext
+            // Replace NETTY_SERVER_CHANNEL_HANDLER_CONTEXT in SessionContext
+            // 在SessionContext中替换NETTY_SERVER_CHANNEL_HANDLER_CONTEXT
             final SessionContext zuulCtx = zuulRequest.getContext();
             zuulCtx.put(NETTY_SERVER_CHANNEL_HANDLER_CONTEXT, ctx);
             zuulCtx.put(ZUUL_FILTER_CHAIN, requestFilterChain);
 
+            // --------------------关键方法--------------------
+            // 调用 ZuulFilterChainRunner filter 方法
             requestFilterChain.filter(zuulRequest);
         }
         else if ((msg instanceof HttpContent)&&(zuulRequest != null)) {
+            // --------------------关键方法--------------------
+            // 处理没有转化为 HttpRequestMessage 的方法
             requestFilterChain.filter(zuulRequest, (HttpContent) msg);
         }
         else {
@@ -120,14 +135,21 @@ public class ZuulFilterChainHandler extends ChannelInboundHandlerAdapter {
             ctx.close();
         }
         else {
+            // 获得sessionContext
             final SessionContext zuulCtx = zuulRequest.getContext();
+            // -------------------------关键方法-----------------------------
+            // 设置状态
             StatusCategoryUtils.storeStatusCategoryIfNotAlreadyFailure(zuulCtx, statusCategory);
             final HttpResponseMessage zuulResponse = new HttpResponseMessageImpl(zuulCtx, zuulRequest, status);
+            // 获得http头
             final Headers headers = zuulResponse.getHeaders();
             headers.add("Connection", "close");
             headers.add("Content-Length", "0");
             zuulResponse.finishBufferedBodyIfIncomplete();
+            // ---------------------关键方法-----------------------------
+            // 调用filter 责任链
             responseFilterChain.filter(zuulResponse);
+            // ---------------------关键方法-----------------------------
             fireEndpointFinish(true);
         }
     }

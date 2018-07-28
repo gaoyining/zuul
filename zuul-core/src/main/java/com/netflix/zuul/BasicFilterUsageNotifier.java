@@ -21,6 +21,9 @@ import com.netflix.zuul.filters.ZuulFilter;
 
 /**
  * Publishes a counter metric for each filter on each use.
+ *
+ * 基本过滤器使用通知程序
+ * 在每次使用时为每个过滤器发布计数器度量标准。
  */
 public class BasicFilterUsageNotifier implements FilterUsageNotifier {
     private static final String METRIC_PREFIX = "zuul.filter-";

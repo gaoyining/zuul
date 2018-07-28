@@ -74,6 +74,7 @@ public class Debug {
     }
 
     public static void addRoutingDebug(SessionContext ctx, String line) {
+        // 返回routiong调试消息的列表
         List<String> rd = getRoutingDebug(ctx);
         rd.add(line);
     }
@@ -91,6 +92,7 @@ public class Debug {
     }
 
     /**
+     * 返回routiong调试消息的列表
      *
      * @return Returns the list of routiong debug messages
      */

@@ -47,6 +47,7 @@ class Routes extends HttpInboundSyncFilter {
         String host = request.getOriginalHost()
 
         // Route healthchecks to the healthcheck endpoint.;
+        // 将运行状况检查路由到运行状况检查端点。
         if (path.equalsIgnoreCase("/healthcheck")) {
             context.setEndpoint(Healthcheck.class.getCanonicalName())
         }

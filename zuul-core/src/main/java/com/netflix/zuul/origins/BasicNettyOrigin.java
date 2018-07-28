@@ -56,21 +56,53 @@ import static com.netflix.zuul.stats.status.ZuulStatusCategory.SUCCESS;
  * Netty Origin basic implementation that can be used for most apps, with the more complex methods having no-op
  * implementations.
  *
+ * Netty Origin基本实现可用于大多数应用程序，更复杂的方法具有无操作实现。
+ *
  * Author: Arthur Gonigberg
  * Date: December 01, 2017
  */
 public class BasicNettyOrigin implements NettyOrigin {
 
+    /**
+     * 名称
+     */
     private final String name;
+    /**
+     * ip
+     */
     private final String vip;
+    /**
+     * 注册表
+     */
     private final Registry registry;
+    /**
+     * 定义各种API用于初始化客户端或负载平衡器以及方法执行的客户端配置。
+     */
     private final IClientConfig config;
+    /**
+     * 客户端渠道管理器，负载均衡
+     */
     private final ClientChannelManager clientChannelManager;
+    /**
+     * request 尝试工厂
+     */
     private final NettyRequestAttemptFactory requestAttemptFactory;
 
+    /**
+     * 当前请求数
+     */
     private final AtomicInteger concurrentRequests;
+    /**
+     * 拒绝的请求
+     */
     private final Counter rejectedRequests;
+    /**
+     * 最大request 请求数
+     */
     private final CachedDynamicIntProperty concurrencyMax;
+    /**
+     * zuul当前是否开启开户机制
+     */
     private final CachedDynamicBooleanProperty concurrencyProtectionEnabled;
 
     public BasicNettyOrigin(String name, String vip, Registry registry) {
@@ -78,7 +110,10 @@ public class BasicNettyOrigin implements NettyOrigin {
         this.vip = vip;
         this.registry = registry;
         this.config = setupClientConfig(name);
+        // 创建客户端负载均衡
         this.clientChannelManager = new DefaultClientChannelManager(name, vip, config, registry);
+        // -------------------------关键方法-----------------------
+        // 客户端通道管理器初始化
         this.clientChannelManager.init();
         this.requestAttemptFactory = new NettyRequestAttemptFactory();
 
@@ -90,6 +125,7 @@ public class BasicNettyOrigin implements NettyOrigin {
 
     protected IClientConfig setupClientConfig(String name) {
         // Get the NIWS properties for this Origin.
+        // 获取此Origin的NIWS属性。
         IClientConfig niwsClientConfig = DefaultClientConfigImpl.getClientConfigWithDefaultValues(name);
         niwsClientConfig.set(CommonClientConfigKey.ClientClassName, name);
         niwsClientConfig.loadProperties(name);
