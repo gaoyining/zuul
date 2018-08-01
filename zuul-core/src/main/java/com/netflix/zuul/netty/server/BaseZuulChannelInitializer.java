@@ -285,6 +285,7 @@ public abstract class BaseZuulChannelInitializer extends ChannelInitializer<Chan
 
         // response filter chain
         // 响应过滤器链
+        // 创建 requestFilterChain
         final ZuulFilterChainRunner<HttpResponseMessage> responseFilterChain = getFilterChainRunner(responseFilters,
                 filterUsageNotifier);
 
@@ -301,6 +302,7 @@ public abstract class BaseZuulChannelInitializer extends ChannelInitializer<Chan
 
         // request filter chain | end point | response filter chain
         // 请求过滤链 | 终点 | 响应过滤器链
+        // 创建 requestFilterChain
         final ZuulFilterChainRunner<HttpRequestMessage> requestFilterChain = getFilterChainRunner(requestFilters,
                 filterUsageNotifier, endPoint);
 

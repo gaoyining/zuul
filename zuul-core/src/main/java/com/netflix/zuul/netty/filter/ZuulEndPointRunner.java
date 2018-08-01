@@ -75,23 +75,32 @@ public class ZuulEndPointRunner extends BaseZuulFilterRunner<HttpRequestMessage,
 
     @Override
     public void filter(final HttpRequestMessage zuulReq) {
+        // 判断请求是否已经取消
         if (zuulReq.getContext().isCancelled()) {
             zuulReq.disposeBufferedBody();
             logger.debug("Request was cancelled, UUID {}", zuulReq.getContext().getUUID());
             return;
         }
 
+        // ----------------------------关键方法--------------------------
+        // 获得路由名称
         final String endpointName = getEndPointName(zuulReq.getContext());
         try {
             Preconditions.checkNotNull(zuulReq, "input message");
 
+            // ------------------------关键方法-----------------------
+            // 根据zuulReq 和 路由名称 获得路由，有可能是Healthcheck ；或者是 ProxyEndpoint
             final ZuulFilter<HttpRequestMessage, HttpResponseMessage> endpoint = getEndpoint(endpointName, zuulReq);
             logger.debug("Got endpoint {}, UUID {}", endpoint.filterName(), zuulReq.getContext().getUUID());
+            // 设置 _zuul_endpoin
             setEndpoint(zuulReq, endpoint);
+            // ----------------------关键方法--------------------------
+            // 执行endpoint
             final HttpResponseMessage zuulResp = filter(endpoint, zuulReq);
 
             if ((zuulResp != null)&&(! (endpoint instanceof ProxyEndpoint))) {
-                //EdgeProxyEndpoint calls invokeNextStage internally
+                // EdgeProxyEndpoint calls invokeNextStage internally
+                // EdgeProxyEndpoint在内部调用invokeNextStage
                 logger.debug("Endpoint calling invokeNextStage, UUID {}", zuulReq.getContext().getUUID());
                 invokeNextStage(zuulResp);
             }
@@ -159,6 +168,7 @@ public class ZuulEndPointRunner extends BaseZuulFilterRunner<HttpRequestMessage,
         final SessionContext zuulCtx = zuulRequest.getContext();
 
         if (zuulCtx.getStaticResponse() != null) {
+            // 已经有response，返回
             return STATIC_RESPONSE_ENDPOINT;
         }
 
@@ -167,9 +177,11 @@ public class ZuulEndPointRunner extends BaseZuulFilterRunner<HttpRequestMessage,
         }
 
         if (PROXY_ENDPOINT_FILTER_NAME.equals(endpointName)) {
+            // 是ProxyEndpoint
             return newProxyEndpoint(zuulRequest);
         }
 
+        // 获得过滤器
         final Endpoint<HttpRequestMessage, HttpResponseMessage> filter = getEndpointFilter(endpointName);
         if (filter == null) {
             return new MissingEndpointHandlingFilter(endpointName);
@@ -180,6 +192,7 @@ public class ZuulEndPointRunner extends BaseZuulFilterRunner<HttpRequestMessage,
 
     /**
      * Override to inject your own proxy endpoint implementation
+     * 覆盖以注入您自己的代理端点实现
      *
      * @param zuulRequest - the request message
      * @return the proxy endpoint

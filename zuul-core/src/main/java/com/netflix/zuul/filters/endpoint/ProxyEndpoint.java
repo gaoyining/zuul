@@ -99,6 +99,10 @@ import static com.netflix.zuul.stats.status.ZuulStatusCategory.*;
 /**
  * Not thread safe! New instance of this class is created per HTTP/1.1 request proxied to the origin but NOT for each
  * attempt/retry. All the retry attempts for a given HTTP/1.1 request proxied share the same EdgeProxyEndpoint instance
+ *
+ * 不是线程安全！ 根据代理到源的HTTP / 1.1请求创建此类的新实例，但不是每次尝试/重试。
+ * 代理的给定HTTP / 1.1请求的所有重试尝试共享相同的EdgeProxyEndpoint实例
+ *
  * Created by saroskar on 5/31/17.
  */
 public class ProxyEndpoint extends SyncZuulFilterAdapter<HttpRequestMessage, HttpResponseMessage> implements GenericFutureListener<Future<PooledConnection>> {
@@ -110,7 +114,13 @@ public class ProxyEndpoint extends SyncZuulFilterAdapter<HttpRequestMessage, Htt
     /* Individual request related state */
     private final HttpRequestMessage zuulRequest;
     private final SessionContext context;
+    /**
+     * netty 源目标
+     */
     private final NettyOrigin origin;
+    /**
+     * 请求尝试
+     */
     private final RequestAttempts requestAttempts;
     private final CurrentPassport passport;
     private final NettyRequestAttemptFactory requestAttemptFactory;
@@ -154,8 +164,12 @@ public class ProxyEndpoint extends SyncZuulFilterAdapter<HttpRequestMessage, Htt
                          NettyRequestAttemptFactory requestAttemptFactory) {
         channelCtx = ctx;
         responseFilters = filters;
+        // ----------------------关键方法-------------------------
+        // 转化request
         zuulRequest = transformRequest(inMesg);
         context = zuulRequest.getContext();
+        // ----------------------关键方法-------------------------
+        // 获得源
         origin = getOrigin(zuulRequest);
         requestAttempts = RequestAttempts.getFromSessionContext(context);
         passport = CurrentPassport.fromSessionContext(context);
@@ -240,6 +254,8 @@ public class ProxyEndpoint extends SyncZuulFilterAdapter<HttpRequestMessage, Htt
     public HttpResponseMessage apply(final HttpRequestMessage input) {
         // If no Origin has been selected, then just return a 404 static response.
         // handle any exception here
+        // 如果未选择Origin，则只返回404静态响应。
+        // 在这里处理任何异常
         try {
 
             if (origin == null) {
@@ -249,8 +265,11 @@ public class ProxyEndpoint extends SyncZuulFilterAdapter<HttpRequestMessage, Htt
 
             origin.getProxyTiming(zuulRequest).start();
             origin.onRequestExecutionStart(zuulRequest, 1);
+            // ------------------------关键方法--------------------
+            // 代理请求
             proxyRequestToOrigin();
-            //Doesn't return origin response to caller, calls invokeNext() internally in response filter chain
+            // Doesn't return origin response to caller, calls invokeNext() internally in response filter chain
+            // 不向调用者返回原始响应，在响应过滤器链内部调用invokeNext（）
             return null;
         } catch (Exception ex) {
             handleError(ex);
@@ -325,12 +344,14 @@ public class ProxyEndpoint extends SyncZuulFilterAdapter<HttpRequestMessage, Htt
         if (attempToIpAddressMap == null) {
             attempToIpAddressMap = new HashMap<>();
         }
+        // 获得ip地址
         String ipAddr = origin.getIpAddrFromServer(chosenServer.get());
         if (ipAddr != null) {
             attempToIpAddressMap.put(attemptNum, ipAddr);
             eventProps.put(CommonContextKeys.ZUUL_ORIGIN_ATTEMPT_IPADDR_MAP_KEY, attempToIpAddressMap);
         }
 
+        // 存入请求url
         eventProps.put(CommonContextKeys.ZUUL_ORIGIN_REQUEST_URI, zuulRequest.getPathAndQuery());
     }
 
@@ -338,11 +359,17 @@ public class ProxyEndpoint extends SyncZuulFilterAdapter<HttpRequestMessage, Htt
         Promise<PooledConnection> promise = null;
         try {
             attemptNum += 1;
+            // 创建基本状态
             requestStat = createRequestStat();
+            // 检查是否开启保护 && 请求数
             origin.preRequestChecks(zuulRequest);
             concurrentReqCount++;
+            // ----------------------------关键方法----------------------
+            // 连接到指定服务器
             promise = origin.connectToOrigin(zuulRequest, channelCtx.channel().eventLoop(), attemptNum, passport, chosenServer);
 
+            // ----------------------------关键方法----------------------
+            // 存入ip地址
             logOriginRequestInfo();
             currentRequestAttempt = origin.newRequestAttempt(chosenServer.get(), context, attemptNum);
             requestAttempts.add(currentRequestAttempt);
@@ -368,6 +395,8 @@ public class ProxyEndpoint extends SyncZuulFilterAdapter<HttpRequestMessage, Htt
     /**
      * Override to track your own request stats
      *
+     * 覆盖以跟踪您自己的请求统计信息
+     *
      * @return
      */
     protected RequestStat createRequestStat() {
@@ -379,11 +408,14 @@ public class ProxyEndpoint extends SyncZuulFilterAdapter<HttpRequestMessage, Htt
     @Override
     public void operationComplete(final Future<PooledConnection> connectResult) {
         // MUST run this within bindingcontext because RequestExpiryProcessor (and probably other things) depends on ThreadVariables.
+        //必须在bindingcontext中运行它，因为RequestExpiryProcessor（可能还有其他东西）依赖于ThreadVariables。
         try {
             methodBinding.bind(() -> {
                 // Handle the connection.
+                // 处理连接
                 if (connectResult.isSuccess()) {
                     // Invoke the ribbon execution listeners (including RequestExpiry).
+                    // 调用功能区执行侦听器（包括RequestExpiry）。
                     final ExecutionContext<?> executionContext = origin.getExecutionContext(zuulRequest, attemptNum);
                     IClientConfig requestConfig = executionContext.getRequestConfig();
                     final Object previousOverriddenReadTimeout = requestConfig.getProperty(ReadTimeout, null);
@@ -405,6 +437,8 @@ public class ProxyEndpoint extends SyncZuulFilterAdapter<HttpRequestMessage, Htt
                     finally {
                         // Reset the timeout in overriddenConfig back to what it was before, otherwise it will take
                         // preference on subsequent retry attempts in RequestExpiryProcessor.
+                        // 将overriddenConfig中的超时重置回原来的状态，否则需要
+                        // 在RequestExpiryProcessor中的后续重试尝试中的首选项。
                         if (previousOverriddenReadTimeout == null) {
                             requestConfig.setProperty(ReadTimeout, null);
                         } else {
@@ -412,6 +446,8 @@ public class ProxyEndpoint extends SyncZuulFilterAdapter<HttpRequestMessage, Htt
                         }
                     }
 
+                    // -----------------------关键方法----------------------
+                    // 源连接成功
                     onOriginConnectSucceeded(connectResult.getNow(), readTimeout);
                 } else {
                     onOriginConnectFailed(connectResult.cause());
@@ -438,12 +474,18 @@ public class ProxyEndpoint extends SyncZuulFilterAdapter<HttpRequestMessage, Htt
             // Set the read timeout (we only do this late because this timeout can be adjusted dynamically by the niws RequestExpiryExecutionListener
             // that is run as part of onRequestStartWithServer() above.
             // Add a ReadTimeoutHandler to the channel before we send a request on it.
+            // 设置读取超时（我们只是这么做，因为这个超时可以由niws RequestExpiryExecutionListener动态调整
+            // 作为上面onRequestStartWithServer（）的一部分运行。
+            // 在我们发送请求之前，先向通道添加一个ReadTimeoutHandler。
             conn.startReadTimeoutHandler(readTimeout);
 
             // Also update the RequestAttempt to reflect the readTimeout chosen.
+            // 还更新RequestAttempt以反映所选的readTimeout。
             currentRequestAttempt.setReadTimeout(readTimeout);
 
             // Start sending the request to origin now.
+            // --------------------------关键方法--------------------------------
+            // 现在开始向原点发送请求。
             writeClientRequestToOrigin(conn);
         }
     }
@@ -516,6 +558,7 @@ public class ProxyEndpoint extends SyncZuulFilterAdapter<HttpRequestMessage, Htt
         pipeline.addBefore("connectionPoolHandler", OriginResponseReceiver.CHANNEL_HANDLER_NAME, originResponseReceiver);
 
         // check if body needs to be repopulated for retry
+        // 检查Body是否需要重新填充以进行重试
         repopulateRetryBody();
 
         ch.write(zuulRequest);
@@ -882,22 +925,31 @@ public class ProxyEndpoint extends SyncZuulFilterAdapter<HttpRequestMessage, Htt
     }
 
 
-    /* static utility methods */
-
+    /** static utility methods
+     *
+     * 转化request
+     *
+     */
     protected HttpRequestMessage transformRequest(HttpRequestMessage requestMsg) {
+        // -----------------------关键方法----------------------
+        // 构建request
         requestMsg = massageRequestURI(requestMsg);
 
+        // 获得httpheads
         final Headers headers = requestMsg.getHeaders();
         for (Header entry : headers.entries()) {
             String headerName = entry.getName().getNormalised();
+            // 如果有 Keep-Alive 属性，移除此属性
             if (REQUEST_HEADERS_TO_REMOVE.contains(headerName)) {
                 headers.remove(entry.getKey());
             }
         }
 
+        // 可添加客户端自己的头信息，未实现
         addCustomRequestHeaders(headers);
 
         // Add X-Forwarded headers if not already there.
+        // 添加X-Forwarded标头（如果尚未添加）。
         ProxyUtils.addXForwardedHeaders(requestMsg);
 
         return requestMsg;
@@ -918,7 +970,9 @@ public class ProxyEndpoint extends SyncZuulFilterAdapter<HttpRequestMessage, Htt
         }
 
         // If another filter has specified an overrideURI, then use that instead of requested URI.
+        // 如果另一个过滤器指定了overrideURI，则使用该过滤器而不是请求的URI。
         final Object override = context.get("overrideURI");
+        // 如果有overrideURI 进行覆盖
         if(override != null ) {
             uri = override.toString();
         }
@@ -927,6 +981,7 @@ public class ProxyEndpoint extends SyncZuulFilterAdapter<HttpRequestMessage, Htt
             int index = uri.indexOf('?');
             if (index != -1) {
                 // Strip the query string off of the URI.
+                // 从URI中删除查询字符串。
                 String paramString = uri.substring(index + 1);
                 modifiedPath = uri.substring(0, index);
 
@@ -965,6 +1020,10 @@ public class ProxyEndpoint extends SyncZuulFilterAdapter<HttpRequestMessage, Htt
      * Note: this method gets called in the constructor so if overloading it or any methods called within, you cannot
      * rely on your own constructor parameters.
      *
+     * 获得实现的源
+     *
+     * 注意：此方法在构造函数中被调用，因此如果重载它或在其中调用的任何方法，则不能依赖于您自己的构造函数参数。
+     *
      * @param request
      * @return
      */
@@ -984,10 +1043,12 @@ public class ProxyEndpoint extends SyncZuulFilterAdapter<HttpRequestMessage, Htt
         String primaryRoute = context.getRouteVIP();
         if (StringUtils.isEmpty(primaryRoute)) {
             // If no vip selected, leave origin null, then later the handleNoOriginSelected() method will be invoked.
+            // 如果没有选择vip，请将origin保留为null，然后稍后调用handleNoOriginSelected（）方法。
             return null;
         }
 
         // make sure the restClientName will never be a raw VIP in cases where it's the fallback for another route assignment
+        // 确保restClientName永远不会是原始VIP，如果它是另一个路由分配的后备
         String restClientVIP = primaryRoute;
         boolean useFullName = context.getBoolean(CommonContextKeys.USE_FULL_VIP_NAME);
         String restClientName = useFullName ? restClientVIP : VipUtils.getVIPPrefix(restClientVIP);
@@ -1002,12 +1063,15 @@ public class ProxyEndpoint extends SyncZuulFilterAdapter<HttpRequestMessage, Htt
 
         if (restClientName != null) {
             // This is the normal flow - that a RoutingFilter has assigned a route
+            // 这是正常流程 - RoutingFilter已分配路由
+            // 创建 BasicNettyOrigin
             origin = getOrCreateOrigin(originManager, restClientName, restClientVIP, request.reconstructURI(), useFullName, context);
         }
 
         verifyOrigin(context, request, restClientName, origin);
 
         // Update the routeVip on context to show the actual raw VIP from the clientConfig of the chosen Origin.
+        // 更新上下文中的routeVip，以显示所选Origin的clientConfig中的实际原始VIP。
         if (origin != null) {
             context.set(CommonContextKeys.ACTUAL_VIP, origin.getClientConfig().get(IClientConfigKey.Keys.DeploymentContextBasedVipAddresses));
             context.set(CommonContextKeys.ORIGIN_VIP_SECURE, origin.getClientConfig().get(IClientConfigKey.Keys.IsSecure));

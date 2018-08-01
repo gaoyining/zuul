@@ -31,6 +31,11 @@ public abstract class BaseSyncFilter<I extends ZuulMessage, O extends ZuulMessag
      *
      * A subclass filter should override this method if doing any IO.
      *
+     *  applyAsync（）的包装器实现，仅用于聚合非阻塞的apply（）方法
+     * 在一个Observable中。
+     *
+     * 如果执行任何IO，子类过滤器应覆盖此方法。
+     *
      * @param input
      * @return
      */

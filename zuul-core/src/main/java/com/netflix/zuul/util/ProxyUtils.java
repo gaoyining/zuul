@@ -69,6 +69,7 @@ public class ProxyUtils
     public static void addXForwardedHeaders(HttpRequestMessage request)
     {
         // Add standard Proxy request headers.
+        // 添加标准代理请求标头。
         Headers headers = request.getHeaders();
         addXForwardedHeader(headers, HttpHeaderNames.X_FORWARDED_HOST, request.getOriginalHost());
         addXForwardedHeader(headers, HttpHeaderNames.X_FORWARDED_PORT, Integer.toString(request.getPort()));

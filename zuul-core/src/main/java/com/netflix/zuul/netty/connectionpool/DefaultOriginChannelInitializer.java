@@ -35,6 +35,8 @@ import static com.netflix.zuul.netty.server.BaseZuulChannelInitializer.HTTP_CODE
 /**
  * Default Origin Channel Initializer
  *
+ * 默认原始通道初始化程序
+ *
  * Author: Arthur Gonigberg
  * Date: December 01, 2017
  */

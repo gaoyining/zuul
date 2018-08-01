@@ -64,12 +64,6 @@ public class ZuulFilterChainHandler extends ChannelInboundHandlerAdapter {
     private static final Logger LOG = LoggerFactory.getLogger(ZuulFilterChainHandler.class);
 
 
-    public ZuulFilterChainHandler(ZuulFilterChainRunner<HttpRequestMessage> requestFilterChain,
-                                  ZuulFilterChainRunner<HttpResponseMessage> responseFilterChain) {
-        this.requestFilterChain = Preconditions.checkNotNull(requestFilterChain, "request filter chain");
-        this.responseFilterChain = Preconditions.checkNotNull(responseFilterChain, "response filter chain");
-    }
-
     /**
      * netty 方法
      *
@@ -102,6 +96,12 @@ public class ZuulFilterChainHandler extends ChannelInboundHandlerAdapter {
             LOG.debug("Received unrecognized message type. " + msg.getClass().getName());
             ReferenceCountUtil.release(msg);
         }
+    }
+
+    public ZuulFilterChainHandler(ZuulFilterChainRunner<HttpRequestMessage> requestFilterChain,
+                                  ZuulFilterChainRunner<HttpResponseMessage> responseFilterChain) {
+        this.requestFilterChain = Preconditions.checkNotNull(requestFilterChain, "request filter chain");
+        this.responseFilterChain = Preconditions.checkNotNull(responseFilterChain, "response filter chain");
     }
 
     @Override

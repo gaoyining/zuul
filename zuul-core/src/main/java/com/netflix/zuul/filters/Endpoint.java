@@ -42,6 +42,7 @@ public abstract class Endpoint<I extends ZuulMessage, O extends ZuulMessage> ext
     public boolean shouldFilter(I msg)
     {
         // Always true, because Endpoint filters are chosen by name instead.
+        // 始终为true，因为端点过滤器是按名称选择的。
         return true;
     }
 }

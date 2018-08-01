@@ -93,6 +93,8 @@ public class DefaultClientChannelManager implements ClientChannelManager {
     public static final String IDLE_STATE_HANDLER_NAME = "idleStateHandler";
 
     public DefaultClientChannelManager(String originName, String vip, IClientConfig clientConfig, Registry spectatorRegistry) {
+        // -------------------------关键方法-------------------------
+        // 创建负载均衡
         this.loadBalancer = createLoadBalancer(clientConfig);
 
         this.vip = vip;
@@ -149,11 +151,13 @@ public class DefaultClientChannelManager implements ClientChannelManager {
 
     protected DynamicServerListLoadBalancer createLoadBalancer(IClientConfig clientConfig) {
         // Create and configure a loadbalancer for this vip.
+        // 为此vip创建并配置负载均衡器。
         String defaultLoadBalancerClassName = getLoadBalancerClass().getName();
         String loadBalancerClassName = clientConfig.get(NFLoadBalancerClassName, defaultLoadBalancerClassName);
 
         DynamicServerListLoadBalancer lb;
         try {
+            // 创建负载均衡类
             Class clazz = Class.forName(loadBalancerClassName);
             lb = (DynamicServerListLoadBalancer) clazz.newInstance();
             lb.initWithNiwsConfig(clientConfig);
@@ -311,6 +315,12 @@ public class DefaultClientChannelManager implements ClientChannelManager {
         }
     }
 
+
+    /**
+     * 获得许可
+     * @param eventLoop
+     * @return
+     */
     @Override
     public Promise<PooledConnection> acquire(final EventLoop eventLoop) {
         return acquire(eventLoop, null, null, null, 1, CurrentPassport.create(), new AtomicReference<>());
@@ -332,6 +342,7 @@ public class DefaultClientChannelManager implements ClientChannelManager {
         }
 
         // Choose the next load-balanced server.
+        // 选择下一个负载均衡的服务器。
         final Server chosenServer = loadBalancer.chooseServer(key);
         if (chosenServer == null) {
             Promise<PooledConnection> promise = eventLoop.newPromise();
@@ -342,6 +353,7 @@ public class DefaultClientChannelManager implements ClientChannelManager {
         final InstanceInfo instanceInfo = chosenServer instanceof DiscoveryEnabledServer ?
                 ((DiscoveryEnabledServer) chosenServer).getInstanceInfo() :
                 // create mock instance info for non-discovery instances
+                // 为非发现实例创建模拟实例信息
                 new InstanceInfo(chosenServer.getId(), null, null, chosenServer.getHost(), chosenServer.getId(),
                         null, null, null, null, null, null, null, null, 0, null, null, null, null, null, null, null, null, null, null, null);
 
@@ -349,9 +361,11 @@ public class DefaultClientChannelManager implements ClientChannelManager {
         selectedServer.set(chosenServer);
 
         // Now get the connection-pool for this server.
+        // 现在获取此服务器的连接池。
         PerServerConnectionPool pool = perServerPools.computeIfAbsent(chosenServer, s -> {
 
             // Get the stats from LB for this server.
+            // 从LB获取此服务器的统计信息。
             LoadBalancerStats lbStats = loadBalancer.getLoadBalancerStats();
             ServerStats stats = lbStats.getSingleServerStat(chosenServer);
 
@@ -360,6 +374,7 @@ public class DefaultClientChannelManager implements ClientChannelManager {
                     instanceInfo, stats, closeConnCounter, closeWrtBusyConnCounter);
 
             // Create a new pool for this server.
+            // 为此服务器创建一个新池。
             return new PerServerConnectionPool(
                     chosenServer,
                     stats,

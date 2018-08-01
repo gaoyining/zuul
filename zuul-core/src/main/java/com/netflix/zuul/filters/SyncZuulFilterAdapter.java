@@ -37,6 +37,21 @@ import static com.netflix.zuul.filters.FilterType.ENDPOINT;
  * b) They leak memory as they add themselves to some ConcurrentHashMap and are never garbage collected.
  *
  * TL;DR use this as a base class for your ZuulFilter if you intend to create new instances of ZuulFilter
+ *
+ *
+ * 用于帮助实现SyncZuulFilter的基类。
+ * 请注意，类BaseSyncFilter确实存在，但它派生自BaseFilter，
+ * 而BaseFilter每次创建ZuulFilter的新实例时都会为“filterDisabled”创建一个新的CachedDynamicBooleanProperty实例。
+ * 通常，由于ZuulFilters的实例是“有效”的单例并且由ZuulFilterLoader缓存，所以它并不是太令人担忧。
+ * 但是，如果您需要为每个请求实例化一个新的ZuulFilter实例 -
+ * 也就是EdgeProxyEndpoint或Inbound / Outbound PassportStampingFilter为每个ZuulFilter实例创建CachedDynamicBooleanProperty
+ * 的新实例将很快破坏您的服务器的性能
+ * 两种方式 -
+ * a) 由于构造函数中有大量的连接机制，CachedDynamicBooleanProperty的实例是非常*非常重的CPU创建
+ *
+ * b) 他们将内存添加到某些ConcurrentHashMap并且从不进行垃圾回收时泄漏内存。
+ *
+ *
  * Created by saroskar on 6/8/17.
  */
 public abstract class SyncZuulFilterAdapter<I extends ZuulMessage, O extends ZuulMessage> implements SyncZuulFilter<I, O> {
@@ -54,6 +69,7 @@ public abstract class SyncZuulFilterAdapter<I extends ZuulMessage, O extends Zuu
     @Override
     public int filterOrder() {
         // Set all Endpoint filters to order of 0, because they are not processed sequentially like other filter types.
+        // 将所有端点过滤器设置为0，因为它们不像其他过滤器类型那样按顺序处理。
         return 0;
     }
 

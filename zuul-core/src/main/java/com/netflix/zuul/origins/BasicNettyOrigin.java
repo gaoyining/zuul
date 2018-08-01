@@ -101,7 +101,7 @@ public class BasicNettyOrigin implements NettyOrigin {
      */
     private final CachedDynamicIntProperty concurrencyMax;
     /**
-     * zuul当前是否开启开户机制
+     * zuul当前是否开启保护机制
      */
     private final CachedDynamicBooleanProperty concurrencyProtectionEnabled;
 
@@ -260,6 +260,7 @@ public class BasicNettyOrigin implements NettyOrigin {
 
     @Override
     public void preRequestChecks(HttpRequestMessage zuulRequest) {
+        // 是否开启了保护机制 && 当前最大请求 > 允许的最大请求
         if (concurrencyProtectionEnabled.get() && concurrentRequests.get() > concurrencyMax.get()) {
             rejectedRequests.increment();
             throw new OriginConcurrencyExceededException(getName());

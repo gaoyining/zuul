@@ -149,6 +149,8 @@ public abstract class BaseZuulFilterRunner<I extends ZuulMessage, O extends Zuul
 
     protected final void invokeNextStage(final O zuulMesg) {
         if (nextStage != null) {
+            // -------------------------------关键方法----------------------------
+            // 调用路由filter
             nextStage.filter(zuulMesg);
         }
         else {
